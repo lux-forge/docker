@@ -1,0 +1,50 @@
+# Prep the networks - this allows for containers to talk on the main network
+# https://docs.docker.com/reference/compose-file/networks/
+
+services:
+  # Unifi WiFi controller
+  unifi:
+    image: lscr.io/linuxserver/unifi-controller:latest
+    container_name: unifi
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - MEM_LIMIT=1024 #optional
+      - MEM_STARTUP=1024 #optional
+    volumes:
+      - unifi-config:/config
+    restart: unless-stopped
+    networks:
+      quinly-management:
+        ipv4_address: 10.10.99.12
+
+  nginx:
+    image: "jc21/nginx-proxy-manager:latest"
+    container_name: nginx
+    restart: unless-stopped
+
+    volumes:
+      - nginx-data:/data
+      - nginx-certs:/etc/letsencrypt
+      - ./98-themepark-npm:/etc/cont-init.d/98-themepark
+    environment:
+      - TP_THEME=dark
+    ports:
+      - 80:80
+      - 443:443
+    networks:
+      quinly-services:
+        ipv4_address: 10.10.0.20
+
+
+
+volumes:
+  portainer-data:
+  cloudbeaver-workspace:
+  unifi-config:
+  nginx-data:
+    external: true
+    name: administrator_nginx-data
+  nginx-certs:
+    external: true
+    name: administrator_nginx-certs

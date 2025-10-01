@@ -1,0 +1,31 @@
+networks:
+  quinly-services:
+    name: quinly-services
+    external: true
+
+services:
+  patroni:
+    container_name: patroni
+    hostname: patroni
+    build:
+      dockerfile: ./patroni.dockerfile
+      context: ./patroni
+      target: postgres-patroni
+      tags: 
+      - "database-patroni"
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: "1m"
+        max-file: "5"
+    env_file:
+      - .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./patroni.yml:/venv/etc/patroni.yml
+    networks:
+      quinly-services:
+        ipv4_address: ${PATRONI_IP}
+
+volumes:
+  postgres_data:

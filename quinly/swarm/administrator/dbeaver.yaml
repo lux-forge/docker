@@ -1,0 +1,19 @@
+# Database manager - https://github.com/dbeaver/cloudbeaver/wiki/Run-Docker-Container
+cloudbeaver:
+  image: dbeaver/cloudbeaver:latest
+  container_name: ${CLOUDBEAVER_NAME}
+  volumes:
+    - cloudbeaver-workspace:/opt/cloudbeaver/workspace
+  ports:
+    - 8978:8978
+  environment:
+    #- CB_SERVER_NAME=${CLOUDBEAVER_NAME}
+    #- CB_SERVER_URL=https://dbeaver.quinly.co.uk/
+    - CB_ADMIN_NAME=ben
+    - CB_ADMIN_PASSWORD=ORYX09pizz@12
+    # - CB_ADMIN_NAME=${CLOUDBEAVER_ADMIN_NAME}
+    #- CB_ADMIN_PASSWORD=${CLOUDBEAVER_ADMIN_PASSWORD}
+    - CLOUDBEAVER_DB_USER:admin
+    - CLOUDBEAVER_DB_PASSWORD:ORYX09pizz@12
+    #- CLOUDBEAVER_QM_DB_USER:${CLOUDBEAVER_ADMIN_NAME}
+    #- CLOUDBEAVER_QM_DB_PASSWORD:${CLOUDBEAVER_ADMIN_PASSWORD}

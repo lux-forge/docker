@@ -1,0 +1,89 @@
+# https://medium.com/@nicola.vitaly/setting-up-high-availability-postgresql-cluster-using-patroni-pgbouncer-docker-consul-and-95c70445b1b1
+
+networks:
+  quinly-services:
+    name: quinly-services
+    external: true
+  
+
+haproxy:
+  image: haproxy
+  ports:
+    - "5432:5432"
+    - "5433:5433"
+  restart: unless-stopped
+  networks:
+    quinly-services:
+      ipv4_address: 10.10.0.21
+
+# PostgreSQL image with patroni installed
+patroni:
+  image: patroni-image
+  networks:
+    - postgres-backend
+  ports:
+    - "8008:8008"
+    - "6432:5432"
+  user: postgres
+  volumes:
+    - postgres-data:/var/lib/postgresql/data
+  environment:
+    TZ: Europe/London
+    PATRONI_NAME: member_1
+    PATRONI_POSTGRESQL_DATA_DIR: /var/lib/postgresql/data/node1
+    PATRONI_CONSUL_HOST: http://10.10.0.14:8500
+    PATRONI_CONSUL_URL: http://10.10.0.14:8500/v1/
+  restart: unless-stopped
+  networks:
+    quinly-services:
+      ipv4_address: 10.10.0.11
+
+# Handles incoming requests to postgres/patroni
+pgbouncer:
+  image: edoburu/pgbouncer
+  ports:
+    - "5432:5432"
+  depends_on:
+    - patroni
+  environment:
+    TZ: Europe/London
+    ADMIN_USERS: admin
+    DB_HOST: patroni
+    DB_USER: admin
+    DB_PASSWORD: admin
+    POOL_MODE: transaction
+    MAX_CLIENT_CONN: 1000
+    DEFAULT_POOL_SIZE: 300
+  restart: unless-stopped
+  networks:
+    quinly-services:
+      ipv4_address: 10.10.0.17
+
+# Use a consul image for the cluster
+consul:
+  image: consul
+  hostname: pg-cluster-consul
+  container_name: pg-cluster-consul
+  environment:
+    TZ: Europe/London
+  ports:
+    - "8300:8300"
+    - "8301:8301"
+    - "8301:8301/udp"
+    - "8302:8302"
+    - "8302:8302/udp"
+    - "8400:8400"
+    - "8500:8500"
+    - "8600:8600/udp"
+  volumes:
+    - consul-data:/data
+  restart: unless-stopped
+  command: agent -server -advertise 10.10.0.14 -bootstrap-expect 3 -client 0.0.0.0 -retry-join 10.10.0.1 -retry-join 10.128.0.98 -retry-join 10.128.0.99
+  networks:
+    quinly-services:
+      ipv4_address: 10.10.0.14
+
+
+volumes:
+  consul-data:
+  postgres-data:
