@@ -1,0 +1,100 @@
+.
+├── changelog
+│   └── etcd-cluster.md
+├── CHANGELOG.md
+├── common.env
+├── quinly
+│   ├── config
+│   │   ├── global.env
+│   │   └── networks
+│   │       ├── iot.env
+│   │       ├── management.env
+│   │       ├── networks.env
+│   │       └── services.env
+│   ├── individual
+│   │   ├── common
+│   │   │   ├── docker-compose.yml
+│   │   │   └── .env
+│   │   ├── database
+│   │   │   ├── build
+│   │   │   │   ├── build-pg-cluster.sh
+│   │   │   │   ├── dockerfile
+│   │   │   │   ├── etcdenv
+│   │   │   │   ├── etcd.service
+│   │   │   │   └── patroni.yml
+│   │   │   ├── docker-compose.yml
+│   │   │   ├── .env
+│   │   │   ├── patroni
+│   │   │   │   ├── patroni.dockerfile
+│   │   │   │   └── patroni-entrypoint.sh
+│   │   │   ├── patroni.yml
+│   │   │   └── sql
+│   │   │       ├── database and user creation.sql
+│   │   │       └── get users.sql
+│   │   ├── etcd-node
+│   │   │   ├── create_rand_token.sh
+│   │   │   ├── docker-compose.yml
+│   │   │   ├── .env
+│   │   │   └── ReadMe.md
+│   │   ├── media-server
+│   │   │   ├── common.env
+│   │   │   ├── docker-compose.yml
+│   │   │   ├── .env
+│   │   │   ├── jellyfin.env
+│   │   │   ├── jellyseerr.env
+│   │   │   ├── overseerr.env
+│   │   │   └── plex.env
+│   │   └── patroni-cluster
+│   │       ├── docker-compose2020.yml
+│   │       ├── docker-compose20250331.yml
+│   │       ├── docker-compose copy.yml
+│   │       ├── docker-compose.yml
+│   │       ├── haproxy.cfg
+│   │       ├── haproxy.cfg.old
+│   │       ├── patroni1.yml
+│   │       ├── patroni2.yml
+│   │       ├── patroni3.yml
+│   │       ├── patroni.dockerfile
+│   │       ├── patroni-entrypoint.sh
+│   │       ├── patroni.yml
+│   │       └── readme.md
+│   ├── networks
+│   │   ├── create-networks.sh
+│   │   ├── management.env
+│   │   └── README.md
+│   ├── swarm
+│   │   ├── administrator
+│   │   │   ├── 98-themepark-npm
+│   │   │   ├── dbeaver.yaml
+│   │   │   ├── docker-compose.yml
+│   │   │   └── README.md
+│   │   ├── arr
+│   │   │   ├── docker-compose.yml
+│   │   │   ├── .env
+│   │   │   ├── gluetun.env
+│   │   │   ├── prowlarr.env
+│   │   │   ├── qbittorrent.env
+│   │   │   ├── rreading-glasses.env
+│   │   │   └── threadfin.env
+│   │   ├── authenticator
+│   │   │   └── docker-compose.yml
+│   │   ├── dns
+│   │   │   ├── 02-quinly-wildcard-dns.conf
+│   │   │   └── docker-compose.yml
+│   │   ├── productivity
+│   │   │   ├── backup.yml
+│   │   │   ├── docker-compose.yml
+│   │   │   └── planka
+│   │   │       ├── 2024-12-20T13-41-10Z-backup.tgz
+│   │   │       └── docker-restore.sh
+│   │   └── tunnel
+│   │       ├── docker-compose.yml
+│   │       ├── .env
+│   │       └── sysctl.conf
+│   └── users
+│       ├── create-users.sh
+│       └── users.csv
+├── README.md
+└── structure.txt
+
+24 directories, 74 files

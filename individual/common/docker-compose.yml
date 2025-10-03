@@ -1,0 +1,67 @@
+# Services to host on all docker containers
+
+  # Externally facing web services
+networks:
+  quinly-services:
+    driver: macvlan
+    driver_opts:
+      parent: ${SERVICES_NETWORK_PARENT}
+    ipam:
+      config:
+        - subnet: ${SERVICES_SUBNET}
+          gateway: ${SERVICES_NETWORK_GATEWAY}
+
+  # Internal management network
+  quinly-management:
+    driver: macvlan
+    driver_opts:
+      parent: ${MANAGEMENT_NETWORK_PARENT}
+    ipam:
+      config:
+        - subnet: ${MANAGEMENT_SUBNET}
+          gateway: ${MANAGEMENT_NETWORK_GATEWAY}
+
+  # Optional IoT network
+  quinly-iot:
+    driver: macvlan
+    driver_opts:
+      parent: ${IOT_NETWORK_PARENT}
+    ipam:
+      config:
+        - subnet: ${IOT_SUBNET}
+          gateway: ${IOT_NETWORK_GATEWAY}
+
+services:
+  # Log processing - https://github.com/jumanjihouse/docker-rsyslog
+  # Also forces generation of all the networks
+  rsyslog:
+    container_name: rsyslog
+    image: jumanjiman/rsyslog
+    networks:
+      quinly-services:
+        ipv4_address: ${RSYSLOG_SERVICES_IP}
+      quinly-iot:
+        ipv4_address: ${RSYSLOG_IOT_IP}
+
+  # Watchtower - auto updater
+  watchtower:
+    container_name: watchtower
+    image: containrrr/watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  # Container management
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer-data:/data
+    restart: always
+    networks:
+      quinly-management:
+        ipv4_address: ${PORTAINER_IP}
+
+# Volumes for persistent data - do not use the NAS for these
+volumes:
+  portainer-data:

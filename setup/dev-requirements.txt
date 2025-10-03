@@ -1,0 +1,4 @@
+pipreqs==0.4.13
+black
+flake8
+pytest
