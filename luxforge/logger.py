@@ -1,4 +1,6 @@
-# luxforge-logger.py
+# /#!/usr/bin/env python3
+
+# # logger.py
 # Author: Luxforge
 # Modular logging setup for Python applications
 
@@ -6,11 +8,15 @@ import socket
 from pathlib import Path
 from datetime import datetime
 from dotenv import load_dotenv
+from time import sleep
+from pathloader import paths
 import os
 
-class LuxforgeLogger:
+from colours import Colours
+
+class Logger:
     """
-    LuxforgeLogger sets up a standardized logging configuration.
+    Logger sets up a standardized logging configuration.
     ARGS:
         name: Logger name (default: "luxforge")
         log_to_file: Whether to log to a file (default: False)
@@ -25,18 +31,17 @@ class LuxforgeLogger:
     PROPERTIES:
         logger: The underlying logging.Logger instance
     """
-    # Standard logging levels, can be expanded if needed
+    # Standard logging levels, can be expanded if needed - add colours 
     LEVELS = {
-        "DEBUG": 10,
-        "INFO": 20,
-        "WARNING": 30,
-        "ERROR": 40,
-        "CRITICAL": 50,
-        "CHANGELOG": 25  # Custom level for changelog entries
+        "DEBUG": (10, "gray"),
+        "INFO": (20, None),
+        "CHANGELOG": (25, "blue"),  # Custom level for changelog entries
+        "WARNING": (30, "yellow"),
+        "ERROR": (40, "orange"),
+        "CRITICAL": (50, "red")
     }
 
-
-    def __init__(self, env_path="./config/global/logs.env"):
+    def __init__(self, env_path=f"{paths.config}/global/logs.env"):
         # Initialize logger settings using environment variables
         
         # Set the node name and user
@@ -44,49 +49,48 @@ class LuxforgeLogger:
         self.user = os.getenv("USER") or os.getenv("USERNAME") or "unknown"
 
         # Set the version
-        self.version_info = self.load_version()
+        self.version_info = self.__load_version()
 
         # Load environment variables from the specified .env file - puts them into os.environ
         load_dotenv(dotenv_path=env_path)
+
+        # Initialize current task and log filename
+        self.task = "init"
+        
+        # Set the base directory for logs
+        self.log_dir = os.getenv("LOG_DIR", paths.logs)
+        self.base_dir = self.log_dir
 
         # Read configuration from environment variables with defaults
         self.date_format = os.getenv("DATE_FORMAT", "%Y-%m-%d %H:%M:%S.%f")
         self.decimal_digits = int(os.getenv("NUMBER_OF_DIGITS_AFTER_DECIMAL", 3))
 
         # Set the log to file and console flags
-        self._log_to_file = os.getenv("LOG_TO_FILE", "True").lower() == "true"
-        self._log_to_console = os.getenv("LOG_TO_CONSOLE", "True").lower() == "true"
+        self.__log_to_file = os.getenv("LOG_TO_FILE", "True").lower() == "true"
+        self.__log_to_console = os.getenv("LOG_TO_CONSOLE", "True").lower() == "true"
 
         # Set the log level
-        level_str = os.getenv("LOGLEVEL", "DEBUG").upper()
-        self.level = self.LEVELS.get(level_str, 10)
-        
-        # Initialize current task and log filename
-        self._task = "init"
-
-        # Set the base directory for logs
-        self._log_dir = os.getenv("LOG_DIR", "./logs")
-        self.base_dir = self._log_dir
+        level_int = int( os.getenv("LOGLEVEL", "DEBUG"))
+        self.__level(level_int)
 
         # Update the actual log directory
-        self._update_directory()
+        self.__update_directory()
 
         # Set the initial log filename
-        self._update_filename()
-
+        self.__update_filename()
+        
         # Load max log size and backup settings
-        self._max_log_size = int(os.getenv("MAX_LOG_SIZE_MB", 5))
-        self._max_log_backup = int(os.getenv("MAX_LOG_BACKUP_COUNT", 5))
+        self.__max_log_size(int(os.getenv("MAX_LOG_SIZE_MB", 5)))
+        self.__max_log_backup(int(os.getenv("MAX_LOG_BACKUP_COUNT", 5)))
 
         # Post a log entry indicating initialization
         self.i(f"Logger initialized for node '{self.node}' by user '{self.user}'. Version: {self.version_info.get('version', 'unknown')}")
-        self.i(f"Logging level set to {level_str} ({self.level})")
+        self.i(f"Logging level set to {level_int} ({self.level})")
 
         # Show the current taskname
-        self.task()
+        self.__task()
 
-
-    def load_version(self, version_file="./version.yaml") -> dict:
+    def __load_version(self, version_file=f"{paths.repo_root}/version.yaml") -> dict:
         # Load version information from a YAML file
         import yaml
         try:
@@ -97,7 +101,7 @@ class LuxforgeLogger:
             self.log(f"Failed to load version info: {e}", level="ERROR")
             return {}
     
-    def _write(self, path, content, retries=3, timeout=1, encoding="utf-8"):
+    def __write(self, path, content, retries=3, timeout=1, encoding="utf-8"):
         for attempt in range(retries):
             try:
                 with open(path, "a", encoding=encoding) as f:
@@ -105,47 +109,46 @@ class LuxforgeLogger:
                 return True
             except Exception as e:
                 print(f"[luxforgeLogger] Write failed (attempt {attempt+1}): {e}")
-                time.sleep(timeout)
+                sleep(timeout)
         return False
 
-    def _update_filename(self):
+    def __update_filename(self):
 
         # Set the timestamped log filename based on current task and time - it returns YYYYMMDD_HH00
         timestamp = datetime.now().strftime("%Y%m%d_%H00")
 
         # Update the log dir - just in case
-        self._update_directory()
+        self.__update_directory()
 
         # Create a safe task tag for the filename
-        task_tag = self._task.replace(" ", "_") if self._task else "untagged"
-        self.filename = os.path.join(self._log_dir, f"{task_tag}_{timestamp}.log")
+        task_tag = self.task.replace(" ", "_") if self.task else "untagged"
+        self.filename = os.path.join(self.log_dir, f"{task_tag}_{timestamp}.log")
     
-    def _update_directory(self):
+    def __update_directory(self):
 
         # Rebuild the log directory path based on base_dir / task / yyyy / yyyy-mm / yyyy-mm-dd
         year_path = datetime.now().strftime("%Y")
         month_path = datetime.now().strftime("%Y-%m")
         day_path = datetime.now().strftime("%Y-%m-%d")
         date_path = os.path.join(year_path, month_path, day_path)
-        self._log_dir = os.path.join(self.base_dir, self._task, date_path)
+        self.log_dir = os.path.join(self.base_dir, self.task, date_path)
 
         # Ensure the log directory exists
-        os.makedirs(self._log_dir, exist_ok=True)
+        os.makedirs(self.log_dir, exist_ok=True)
 
-
-    def task(self, task_name: str = None) -> str:
+    def __task(self, task_name: str = None) -> str:
         # Method to set or get the current task name
         if task_name:
-            self.i(f"Switching task from '{self._task}' to '{task_name}'")
-            self._task = task_name
+            self.i(f"Switching task from '{self.task}' to '{task_name}'")
+            self.task = task_name
             # Update the filename to reflect the new task
-            self._update_filename()
-            self._update_directory()
+            self.__update_filename()
+            self.__update_directory()
         else:
-            self.i(f"Set task to: {self._task}")
-        return self._task
-    
-    def _formatted_timestamp(self) -> str:
+            self.i(f"Set task to: {self.task}")
+        return self.task
+
+    def __formatted_timestamp(self) -> str:
         # Return the current timestamp formatted according to date_format and decimal_digits
         raw = datetime.now().strftime(self.date_format)
         if "%f" in self.date_format:
@@ -155,17 +158,30 @@ class LuxforgeLogger:
                 return f"{split[0]}.{micro}"
         return raw
 
-    def log(self, message, level="INFO"):
+    def log(self, message, level: str = None):
         # General logging method - logs if level is >= current level
-        if self.LEVELS.get(level.upper(), 0) >= self.level:
-            self._log(message, level.upper())
+        if level is None:
+            level = "INFO" # Default to INFO if no level provided
+        else:
+            level = level.upper()
+            if level not in self.LEVELS:
+                level = "INFO"  # Default to INFO if unknown level
+        level_int = self.LEVELS[level][0]
 
-    def _log(self, message, level):
+        # General logging method - logs if level is >= current level
+        if level_int >= self.level[0]:
+            self.__log(message, level)
+
+    def __log(self, message: str = None, level: str = "INFO"):
         # Internal method to handle the actual logging
+        level = level.upper()
+        if level not in self.LEVELS:
+            level = "INFO"  # Default to INFO if unknown level
 
         # Set the timestamp formatted correctly
-        timestamp = self._formatted_timestamp()
+        timestamp = self.__formatted_timestamp()
         node = self.node
+
         # Generate the log line
         line = f"[{timestamp}] [{node}] [{level}] {message}"
 
@@ -174,18 +190,56 @@ class LuxforgeLogger:
 
             # Ensure the filename is set and directory exists
             if not hasattr(self, 'filename'):
-                self._update_filename()
+                self.__update_filename()
             
             # Ensure the log directory exists
             Path(self.filename).parent.mkdir(parents=True, exist_ok=True)
             
             # Append the log line to the file
-            self._write(self.filename, line + "\n", retries=5, timeout=1, encoding="utf-8")
+            self.__write(self.filename, line + "\n", retries=5, timeout=1, encoding="utf-8")
 
         # Log to console if enabled
         if self.log_to_console():
+            # Get the colour
+            colour = self.LEVELS[level][1]
+            
+            # If its critical, make it bold
+            if level == "CRITICAL":
+                line = Colours.colour_text(line, colour, bold=True)
+            else:
+                line = Colours.colour_text(line, colour)
             print(line)
-    
+
+    def __find_by_level(self, int_level: int = 20) -> str:
+        # Using the level numeric, return the key name. Default to INFO if not found
+        return next((k for k, v in self.LEVELS.items() if v[0] == int_level), "INFO")
+
+    def __level(self, level) -> None:
+        # Getter and Setter for log level
+
+        # Level can be a string, int, tuple or none
+        if isinstance(level, int):
+            # Set the log level directly if it's an int - defaults to info if unknown
+            key = self.__find_by_level(level)
+            self.level = self.LEVELS.get(key, self.LEVELS["INFO"])
+        
+        elif isinstance(level, tuple) and len(level) == 2:
+            # Set the log level directly if it's a tuple (int, colour)
+            self.level = level
+
+        elif isinstance(level, str):
+            # Set the log level by name if it's a string
+            self.level = self.LEVELS.get(level.upper(), self.LEVELS["INFO"])
+
+        elif level is None:
+            # Set the level to default if nothing requested
+            self.level = self.LEVELS["INFO"]
+        
+        # Show the current level
+        self.i(f"Log level set to {self.level} ({self.__find_by_level(self.level[0])})")
+
+        return self.level
+        
     # INFO level logging method
     def info(self, message):
         self.log(message, level="INFO")
@@ -229,7 +283,7 @@ class LuxforgeLogger:
             event (str): Description of the event (e.g. "etcd quorum joined", "version bump")
             context (dict): Optional metadata (e.g. {"version": "1.3.7", "node": "MARTEL"})
         """
-        timestamp = self._formatted_timestamp()
+        timestamp = self.__formatted_timestamp()
         node = self.node
         task = "changelog"
         version = self.version_info.get("version", "unknown")
@@ -246,13 +300,13 @@ class LuxforgeLogger:
     ch = emit_changelog
     cl = emit_changelog
 
-    def max_log_size(self, size: int = None) -> int:
+    def __max_log_size(self, size: int = None) -> int:
         # Method to set or get max log size in MB
         if size is not None:
             self._max_log_size = size
         return getattr(self, "_max_log_size", 5)  # Default to 5 MB if not set
 
-    def max_log_backup(self, count: int = None) -> int:
+    def __max_log_backup(self, count: int = None) -> int:
         # Method to set or get max log backup count
         if count is not None:
             self._max_log_backup = count
@@ -269,14 +323,14 @@ class LuxforgeLogger:
     def log_to_file(self, value: bool = None) -> bool:
         # Method to set or get log to file
         if value is not None:
-            self._log_to_file = value
-        return self._log_to_file
+            self.__log_to_file = value
+        return self.__log_to_file
 
     def log_to_console(self, value: bool = None) -> bool:
         # Method to set or get log to console
         if value is not None:
-            self._log_to_console = value
-        return self._log_to_console
+            self.__log_to_console = value
+        return self.__log_to_console
 
     def log_level(self, level: str = None) -> int:
         
@@ -296,9 +350,27 @@ class LuxforgeLogger:
         if digits is not None:
             self.decimal_digits = digits
         return self.decimal_digits
-
-
-
+    
+    def test_logger_levels(self):
+        timestamp = self.__formatted_timestamp()
+        node = self.node
+        task = "test_logger_levels"
+        self.i(f"Testing logger levels at {timestamp} on node {node} for task {task}")
+        self.__task(task)
+        self.i(f"Current log level set to {self.level}")
+        self.level = self.LEVELS["DEBUG"]
+        self.info("This is an info message.")
+        self.warning("This is a warning message.")
+        self.error("This is an error message.")
+        self.debug("This is a debug message.")
+        self.critical("This is a critical message.")
+        self.emit_changelog("Version bump", {"version": "1.0.1", "node": self.node})
+        
 # Create a default logger instance for module-level use
-logger = LuxforgeLogger()
-luxforgeLogger = logger  # Alias for convenience
+logger = Logger()
+
+if __name__ == "__main__":
+    # Test the logger functionality
+    print("[INFO] Testing luxforgeLogger functionality...")
+    luxforgeLogger = Logger()
+    luxforgeLogger.test_logger_levels()

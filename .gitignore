@@ -17,6 +17,9 @@ config/*
 # Ignore venv folders
 *venv/
 
+# Ignore Python cache files
+__pycache__/
+
 ##### EXCEPTIONS #####
 # Allow all examples
 !*/EXAMPLE/

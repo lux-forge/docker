@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # envprofile.py
 # Author: Luxforge
 # Modular environment loader for node-specific .env files
@@ -7,7 +9,8 @@ from pathlib import Path
 from dotenv import dotenv_values
 from files import find_all_files
 import socket
-from luxforge_logger import luxforgeLogger
+from logger import logger
+from pathloader import paths
 
 
 class EnvProfile:
@@ -23,7 +26,7 @@ class EnvProfile:
 
     def __init__(
             self, 
-            config_root: str ="./config"
+            config_root: str =f"{paths.config}"
         ):
         # Initialize paths and load .env files
         
@@ -48,7 +51,15 @@ class EnvProfile:
 
         # Load and merge all .env files in order
         for env_file in env_files:
-            luxforgeLogger.info(f"Loaded .env file: {env_file}")
+            
+            # Skip the file if it exists in this list - skip logs as it is loaded in the logs module by logger
+            skip_list = ["logs.env"]
+            if env_file.name in skip_list:
+                logger.info(f"Skipping .env file: {env_file}")
+                continue
+            
+            # Show loading file
+            logger.info(f"Loading .env file: {env_file}")
             values = dotenv_values(env_file)
 
             # Log loaded keys
@@ -57,10 +68,12 @@ class EnvProfile:
 
     def _load_defaults(self) -> None:
         # Load default values from defaults.env
-        
-        defaults_path = self.config_root / "EXAMPLE" / "global" / "networks" / "defaults.env"
-        luxforgeLogger.d(f"Loading default environment variables from defaults: {defaults_path}")
-        if defaults_path.exists():
+
+        defaults_path = f"{paths.config}/EXAMPLE/global/networks.env"
+        logger.d(f"Loading default environment variables from defaults: {defaults_path}")
+        # Check if defaults file exists
+
+        if os.path.exists(defaults_path):
             self.defaults = dotenv_values(defaults_path)
             return
         
@@ -83,12 +96,17 @@ class EnvProfile:
         # See if key already exists and log override
         key = key.upper()
         if key in os.environ:
-            luxforgeLogger.warn(f"Overriding os.environ[{key}]: {os.environ[key]} → {value}")
+            logger.warn(f"Overriding env Key:[{key}]: {os.environ[key]} → {value}")
             
        
         # Inject loaded keys into os.environ for global access
         os.environ[key] = value
-        luxforgeLogger.i(f"Set os.environ[{key}] = {value}")
+        logger.d(f"Set env Key:[{key}] → {value}")
+    
 
 # Generate a global instance for easy access
 env_profile = EnvProfile()
+
+# Tests
+if __name__ == "__main__":
+    print(env_profile.preview())

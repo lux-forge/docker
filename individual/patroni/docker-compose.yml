@@ -1,6 +1,7 @@
+# Specify the networks used by this service
 networks:
-  quinly-services:
-    name: quinly-services
+  services:
+    name: services
     external: true
 
 services:
@@ -8,8 +9,8 @@ services:
     container_name: patroni
     hostname: patroni
     build:
-      dockerfile: ./patroni.dockerfile
-      context: ./patroni
+      dockerfile: ./config.dockerfile
+      context: ./config
       target: postgres-patroni
       tags: 
       - "database-patroni"
@@ -22,9 +23,9 @@ services:
       - .env
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./patroni.yml:/venv/etc/patroni.yml
+      - ./config/patroni.yml:/venv/etc/patroni.yml
     networks:
-      quinly-services:
+      services:
         ipv4_address: ${PATRONI_IP}
 
 volumes:

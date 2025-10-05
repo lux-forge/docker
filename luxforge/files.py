@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # files.py
 # Author: Luxforge
 # File and directory utilities
@@ -5,7 +7,7 @@
 import os
 import time
 from pathlib import Path
-from luxforge_logger import luxforgeLogger
+from logger import logger
 from typing import List
 
 def write_file(filepath, data, retries=5, timeout=2, encoding="utf-8"):
@@ -24,7 +26,7 @@ def write_file(filepath, data, retries=5, timeout=2, encoding="utf-8"):
     """
     # VALIDATE INPUTS
     if retries == 0:
-        luxforgeLogger.warning(f"Retries set to 0, no further attempts will be made to write the file: {filepath}")
+        logger.warning(f"Retries set to 0, no further attempts will be made to write the file: {filepath}")
         return False
 
     # Ensure filepath is a Path object
@@ -41,11 +43,11 @@ def write_file(filepath, data, retries=5, timeout=2, encoding="utf-8"):
     except Exception as e:
         
         # Log the error and retry
-        luxforgeLogger.error(f"Failed to write to {filepath}. Retries pending:{retries}. Error: {e}")
+        logger.error(f"Failed to write to {filepath}. Retries pending:{retries}. Error: {e}")
         time.sleep(timeout)
 
         return write_file(filepath, data, retries - 1, timeout, encoding)
-    luxforgeLogger.info(f"Successfully wrote to {filepath}")
+    logger.info(f"Successfully wrote to {filepath}")
     return True
 
 def read_file(filepath: str | Path, encoding: str="utf-8", retries: int=5, timeout: int=2) -> str | None:
@@ -64,13 +66,13 @@ def read_file(filepath: str | Path, encoding: str="utf-8", retries: int=5, timeo
     # VALIDATE INPUTS
     
     if retries == 0:
-        luxforgeLogger.warning(f"Out of retries, no further attempts will be made to read the file: {filepath}")
+        logger.warning(f"Out of retries, no further attempts will be made to read the file: {filepath}")
         return None
     
     # Ensure filepath is a Path object
     filepath = Path(filepath)
     if not filepath.exists():
-        luxforgeLogger.error(f"File does not exist: {filepath}")
+        logger.error(f"File does not exist: {filepath}")
         return None
 
     # Recursively attempt to read the file    
@@ -79,11 +81,11 @@ def read_file(filepath: str | Path, encoding: str="utf-8", retries: int=5, timeo
             return f.read()
     except Exception as e:
 
-        luxforgeLogger.error(f"Failed to read from {filepath}. Error: {e}")
+        logger.error(f"Failed to read from {filepath}. Error: {e}")
         time.sleep(timeout)
         return read_file(filepath, encoding, retries - 1, timeout)
 
-    luxforgeLogger.info(f"Successfully read from {filepath}")
+    logger.info(f"Successfully read from {filepath}")
     return True
 
 def find_all_files(directory: str | Path, pattern: str="*") -> List[Path]:
@@ -99,8 +101,8 @@ def find_all_files(directory: str | Path, pattern: str="*") -> List[Path]:
     """
     directory = Path(directory)
     if not directory.exists() or not directory.is_dir():
-        luxforgeLogger.error(f"Directory does not exist or is not a directory: {directory}")
+        logger.error(f"Directory does not exist or is not a directory: {directory}")
         return []
     
-    luxforgeLogger.info(f"Searching for files in {directory} matching pattern '{pattern}'")
+    logger.info(f"Searching for files in {directory} matching pattern '{pattern}'")
     return [p.resolve() for p in directory.rglob(pattern)]
