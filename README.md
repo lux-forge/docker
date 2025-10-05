@@ -4,11 +4,15 @@ This repository powers a modular homelab environment built around multi-node Doc
 
 The tooling here enables:
 
-- Per-node container lifecycle management
-- Swarm-aware orchestration and role assignment
-- VLAN-mapped networking and IP discipline
-- Environment-driven configuration and audit tagging
+- Ease of logging to file and console (future expansion to cast to a/many endpoints) IN COLOUR.
+- Future expansion, it hosts a host of comments to help even the newest of would-be homelabbers.
+- Craftable Menus (CLI-based) built in Python, based on 1 parent class making subclasses clean and easy to read.
+- A view of would-be useful docker containers without the need to spin all of them up. In config-friendly folders and compose files.
+- A menu that already affords ability to create docker networks down to the macvlan single interface usb-passthrough-ers.
+- An env-loader that casts all your env files into callable global env variables (heavily suggest this is for dev purposes only!)
+- A starter to see how a swarm would work.
 
-At the heart of this system is the **LuxForge** interface—a branded CLI toolkit that provides expressive menu-driven control, lore-aligned automation, and artifact-grade logging. While currently embedded in this repo, LuxForge may evolve into its own standalone module as its scope expands.
 
 This project is designed for homelab operators who value modular clarity, signature-grade interfaces, and disciplined infrastructure workflows.
+
+Want to be part of the team? Send me a message here and I'll get you set up - the more the merrier.
