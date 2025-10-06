@@ -1,0 +1,181 @@
+# User Management, see example below
+
+example:
+  base_uid: 1000 # Base UID for users, will increment by 1 for each user, unless otherwise specified or the next available
+  base_gid: 1000 # Base GID for users, will increment by 1 for each user, unless otherwise specified - will start at base_uid if not specified
+  shell: /bin/bash # Default shell for users, unless otherwise specified
+  service: false # Default service status for users, unless otherwise specified. Will not create home dir or password if true
+  groups:
+    - sudo
+    - adm
+    - cdrom
+    - dip
+    - plugdev
+    - lpadmin
+    - sambashare # Default groups for users, unless otherwise specified or removed
+  ssh_key: false # Default SSH key creation status for users, unless otherwise specified
+  known_hosts: true # Default known_hosts creation status for users, unless otherwise specified - will take from ./known_hosts file
+  users:
+    - name: luxforge # Example user, will not be created
+      uid: 1000 # Specific UID for this user, overrides base_uid
+      gid: 1000 # Specific GID for this user, overrides base_gid
+      full_name: "Luxforge User" # Full name for this user
+      password: "changeme" # Password for this user, will be hashed - change immediately after creation. Highly suggest using .env file to set passwords.
+      shell: /bin/bash
+      service: false
+      active: true
+      add_groups:
+        - docker
+      remove_groups:
+        - sudo
+      ssh_key: true # Whether to create an SSH key for this user
+
+# ======= Actual users to be created below =======
+users:
+  default: # These settings will apply to all users unless otherwise specified within their user block
+    base_uid: 1001
+    base_gid: 1001
+    shell: /bin/bash
+    service: false
+    ssh_key: true
+    known_hosts: true
+
+  admin_users: # These users will be created as regular users with sudo access
+    groups:
+      - sudo
+      - adm
+      - cdrom
+      - dip
+      - plugdev
+      - lpadmin
+      - sambashare
+      - docker
+    users:
+      # Add here any regular users you want to be created
+      - name: luxforge
+        password: "${LUXFORGE_PASSWORD}"
+        full_name: "Luxforge User"
+        uid: 1012
+
+# ======= Docker Users Below =======
+# These users will be created as system users, without home directories or login shells, unless otherwise specified
+# These are used to run services within docker-compose files, and to own files created by those services
+# You can add or remove users as needed, but be aware that some services may not function correctly if their user is not present
+# You can specify a specific UID/GID for each user if needed, otherwise they will be assigned sequentially from the base_uid/base_gid
+# You can also specify additional groups for each user if needed
+docker_users:
+  default:
+    base_uid: 3000
+    base_gid: 1000
+    shell: /usr/sbin/nologin
+    service: true
+    ssh_key: false
+    known_hosts: false
+
+# ======= Swaarm Stack Users =======
+  arr_swarm_stack:
+    base_uid: 3000
+    users:
+      - name: bazarr
+        uid: 3001
+      - name: kapowarr
+        uid: 3002
+      - name: suwayomi
+        uid: 3003
+      - name: flaresolverr
+        uid: 3004
+      - name: gluetun
+        uid: 3005
+      - name: prowlarr
+        uid: 3006
+      - name: radarr
+        uid: 3007
+      - name: rreading-glasses
+        uid: 3008
+      - name: sonarr
+        uid: 3009
+      - name: qbittorrent
+        uid: 3010
+
+  network_swarm_administration_stack:
+    base_uid: 3100
+    users:
+      - name: unifi
+        uid: 3101
+      - name: nginx
+        uid: 3102
+
+  authentik_swarm_stack:
+    base_uid: 3200
+    users:
+      - name: authentik-redis
+        uid: 3201
+      - name: authentik-server
+        uid: 3202
+      - name: authentik-worker
+        uid: 3203
+
+  dns_swarm_stack:
+    base_uid: 3300
+    users:
+      - name: pihole
+        uid: 3301
+
+  productivity_swarm_stack:
+    base_uid: 3400
+    users:
+      - name: planka-frontend
+        uid: 3401
+      - name: planka-postgres
+        uid: 3402
+      - name: heimdall
+        uid: 3403
+      - name: code-server
+        uid: 3404
+      - name: vikunja
+        uid: 3405
+      - name: gitea-frontend
+        uid: 3406
+      - name: gitea-db
+        uid: 3407
+
+  tunnel_swarm_stack:
+    base_uid: 3500
+    users:
+      - name: tunnel
+        uid: 3501
+
+# ======= Individual Stack Users =======
+  monitoring_individual_stack:
+    base_uid: 3600
+    users:
+      - name: rsyslog
+        uid: 3601
+      - name: watchtower
+        uid: 3602
+      - name: portainer
+        uid: 3603
+        
+  patroni_individual_stack:
+    base_uid: 3700
+    users:
+      - name: patroni
+        uid: 3701
+
+  etcd_individual_stack:
+    base_uid: 3800
+    users:
+      - name: etcd
+        uid: 3801
+
+  media_swarm_stack:
+    base_uid: 3900
+    users:
+      - name: jellyfin
+        uid: 3901
+      - name: jellyseer
+        uid: 3902
+      - name: kapowarr
+        uid: 3903
+      - name: plex
+        uid: 3904

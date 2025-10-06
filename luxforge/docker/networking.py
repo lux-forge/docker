@@ -5,9 +5,9 @@
 
 import os
 import subprocess
-from logger import logger
+from utils.logger import logger
 from menu import Menu
-from colours import Colours
+from utils.colours import Colours
 
 class NetworkProfile:
     """
@@ -24,7 +24,7 @@ class NetworkProfile:
  
     def __init__(self, ):
         # Need to load env_profile first to get env vars
-        from envprofile import env_profile
+        from utils.envprofile import env_profile
 
         # Store the provided prefixes and initialize networks dictionary
         # Log the prefixes being used
@@ -294,6 +294,6 @@ class DockerNetworkMenu(Menu):
 network_profile = NetworkProfile()
 
 if __name__ == "__main__":  
-    from logger import logger
+    from luxforge.utils.logger import logger
     docker_menu = DockerNetworkMenu()
     docker_menu.launch()
