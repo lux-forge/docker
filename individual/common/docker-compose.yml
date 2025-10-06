@@ -8,6 +8,8 @@ services:
   watchtower:
     container_name: watchtower
     image: containrrr/watchtower
+    env_file:
+      - watchtower.env
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
@@ -19,6 +21,8 @@ services:
   portainer:
     image: portainer/portainer-ce:latest
     container_name: portainer
+    env_file:
+      - portainer.env
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - portainer-data:/data
