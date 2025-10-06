@@ -7,11 +7,12 @@
 import datetime
 import shutil
 import sys, os
-from abc import ABC # Import ABC for abstract base class
+from abc import ABC
 
 # Load the other luxforge classes and functions
-from logger import logger
-from colours import Colours
+from utils.logger import logger
+from utils.colours import Colours
+from utils.keyhandler import KeyHandler
 
 class Menu(ABC):
     """
@@ -82,7 +83,7 @@ class Menu(ABC):
             # Add back option to options dict if not already present
             for back_option in self.back_options:
                 if back_option not in self.options:
-                    self.options["B"] = ("Back to Previous Menu", "return_to_previous_menu")
+                    self.options["B"] = (f"Back to {self.previous_menu.menu_name}", "return_to_previous_menu")
 
         # Add exit options to valid options
         self.valid_options_as_list += self.exit_options
@@ -93,6 +94,9 @@ class Menu(ABC):
         # Generate a string of valid options for user input prompts
         self.valid_options_as_str = self.__clean_list_to_str(self.options.keys())
         self.exit_options_as_str = self.__clean_list_to_str(self.exit_options)
+
+        # Set up a key handler
+        self.key_handler = KeyHandler()
         
         # Load the setup script path - load can accept args to launch directly into functions
         if selected_option:
@@ -134,7 +138,7 @@ class Menu(ABC):
         # Generate header
         self.__generate_header()
        # Display options - add a gap before back/exit options
-        for key, (desc, _) in options.items():
+        for key, (desc, method_name) in options.items():
            if key in self.back_options:
                self.__boxify_middle(text="", type="options_space") # Add a blank line before back options
            elif key in self.exit_options:
@@ -145,11 +149,7 @@ class Menu(ABC):
         self.__boxify_top_bottom(title=False, top=False) # Bottom border
         
         # Request user input - strip whitespace and convert to uppercase
-        # Add padding to the prompt for aesthetics
-        prompt = f"[?] Select an option ({self.valid_options_as_str}): "
-        space = self.border["space"]*self.border["options_margin"]
-        line = f"{space}   {prompt}"
-        choice = input(line).strip().upper()
+        choice = self.__interactive_select(options)
 
         # Validate input
         valid_input = self.__validate_user_input(choice)
@@ -463,6 +463,86 @@ class Menu(ABC):
         ansi_escape = re.compile(r'\x1B[@-_][0-?]*[ -/]*[@-~]')
         return ansi_escape.sub('', text)
     
+    def __interactive_select(self, options: dict) -> str:
+        """
+        Interactive selection of options using arrow keys and typing.
+        PARAM: options - Dictionary of options to display
+        RETURNS: Selected option key as string
+        """
+
+        # Get the keys as a list for indexing
+        keys = list(options.keys())
+        selected = 0
+
+        # Wait for user input
+        while True:
+            self.__clear()
+            self.__generate_header()
+
+            # Render options
+            for i, key in enumerate(keys):
+                desc, _ = options[key]
+                prefix = "➤  " if i == selected else "    "
+                colour = self.border["option_colour"]
+
+                # Highlight the selected option
+                if i == selected:
+                    colour = "cyan"
+                styled = Colours.colour_text(f"{prefix} {key} | {desc}", colour=colour)
+                if key in self.back_options:
+                    self.__boxify_middle(text="", type="options_space") # Add a blank line before back options
+                elif key in self.exit_options:
+                    self.__boxify_middle(text="", type="options_space") # Add a blank line before exit options
+
+                self.__boxify_middle(text=styled, type="option")
+
+            self.__boxify_middle(text="", type="options_space") # Add a blank line after options
+            self.__boxify_middle(text=f"[?] Select an option ({self.valid_options_as_str}): ", type="option")
+        
+
+                
+            # Show typed input
+            typed = self.key_handler.get_typed()
+            
+            self.__boxify_top_bottom(title=False, top=False)
+
+            # Handle key
+            raw = self.key_handler.get_key()
+            action = self.key_handler.interpret(raw)
+
+            if action == 'UP':
+                selected = (selected - 1) % len(keys)
+            elif action == 'DOWN':
+                selected = (selected + 1) % len(keys)
+            elif action == 'ENTER':
+                if typed and typed in keys:
+                    self.key_handler.reset()
+                    return typed
+                else:
+                    self.key_handler.reset()
+                    return keys[selected]
+            elif action == 'BACKSPACE':
+                # See if we have a previous menu, if so then return to it
+                if self.previous_menu:
+                    self.previous_menu.launch()
+                else:
+                    self.key_handler.reset()
+                    return None
+            elif action == 'ESC':
+                self.key_handler.reset()
+                return None
+
+            # Handle alphabetic input for quick selection
+            # Validate the input
+            else: 
+                if self.__validate_user_input(action):
+                    self.__handle_option(action)
+                else:
+                    logger.error(f"Should not get to this point, break in logic!! Action: {action}")
+        
+
+
+
 # Menu if launched directly - used for testing
 if __name__ == "__main__":
     menu = Menu()
