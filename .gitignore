@@ -20,6 +20,15 @@ config/*
 # Ignore Python cache files
 __pycache__/
 
+# Ignore backup files
+backup/
+
+# Ignore certs
+certs/*
+
+!certs/.keep
+
+
 ##### EXCEPTIONS #####
 # Allow all examples
 !*/EXAMPLE/
