@@ -12,7 +12,8 @@ services:
     # Make sure to use the same version across all nodes in a cluster
     image: quay.io/coreos/etcd:v3.4.33
     container_name: etcd
-    hostname: ${NODE_NAME}-etcd
+    hostname: ${NODE_NAME}
+    entrypoint: ["/usr/local/bin/etcd"]
     restart: unless-stopped
     logging:
       options:
