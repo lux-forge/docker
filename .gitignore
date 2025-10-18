@@ -24,7 +24,7 @@ __pycache__/
 backup/
 
 # Ignore certs
-certs/*
+certs/
 
 !certs/.keep
 

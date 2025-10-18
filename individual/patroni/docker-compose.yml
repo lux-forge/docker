@@ -20,13 +20,15 @@ services:
         max-size: "1m"
         max-file: "5"
     env_file:
-      - .env
+      - ./env.d/charlemagne.env
+      - ./env.d/main.env
+
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./config/patroni.yml:/venv/etc/patroni.yml
     networks:
       services:
-        ipv4_address: ${PATRONI_IP}
+        ipv4_address: ${NODE_IP}
 
 volumes:
   postgres_data:

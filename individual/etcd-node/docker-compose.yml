@@ -3,7 +3,7 @@
 
 networks:
   management:
-    name: ${MANAGEMENT_NETWORK_NAME}
+    name: management
     external: true
 
 services: 
@@ -12,19 +12,20 @@ services:
     # Make sure to use the same version across all nodes in a cluster
     image: quay.io/coreos/etcd:v3.4.33
     container_name: etcd
-    hostname: ${ETCD_NAME}-etcd
+    hostname: ${NODE_NAME}-etcd
     restart: unless-stopped
     logging:
       options:
         max-size: "1m"
         max-file: "5"
-    volumes:
-      - etcd_data:/etcd-data
     env_file:
       - .env
+    volumes:
+      - etcd_data:/etcd-data
+      - ./certs:/etc/etcd/certs:ro
     networks:
       management:
-        ipv4_address: ${ETCD_IP}
+        ipv4_address: ${NODE_IP}
   
 volumes:
   etcd_data:
