@@ -15,3 +15,4 @@
 - "2025-10-24": "Transitioned from scaffolding to production-grade user creation. All identity, security, and grouping pivots validated. Ready for streamlined provisioning."
 - "2025-10-24": "Created identity_has_id() to verify UID/GID alignment for users and groups. Enables skip logic and preserves identity hygiene during provisioning."
 - "2025-10-24": "First successful run of userProvisioner creating a full stack of users for docker uses within the Luxforge environment. Service accounts need to not have home dirs and the odd account had the wrong shell like Plex and Jellyseer"
+- "2025-11-01": "Validated etcd container identity on Kemel as UID/GID 3801. Confirmed alignment with host user provisioning and container runtime configuration."

@@ -10,7 +10,7 @@ services:
   etcd:
     # For other versions see https://quay.io/repository/coreos/etcd?tab=tags
     # Make sure to use the same version across all nodes in a cluster
-    image: quay.io/coreos/etcd:v3.4.33
+    image: quay.io/coreos/etcd:v3.6.5
     container_name: etcd
     hostname: ${NODE_NAME}
     entrypoint: ["/usr/local/bin/etcd"]
@@ -27,6 +27,7 @@ services:
     networks:
       management:
         ipv4_address: ${NODE_IP}
+    user: "${ETCD_USER}"
   
 volumes:
   etcd_data:

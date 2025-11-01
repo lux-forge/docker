@@ -9,13 +9,12 @@ from string import Template
 from pathlib import Path
 
 
-def create_env_files(local_dir: str = None):
+def create_env_files(local_dir: str = ""):
 
     # Set the node names - in order
     NODE_NAMES = ["charlemagne", "voluspa", "joyeuse", "kemel", "martel"]
     env_vars = {f"NODE_NAME{i+1}": name for i, name in enumerate(NODE_NAMES)}
     
-
     # Add the node IPs
     # Load the main environment variables by using the local directory
 

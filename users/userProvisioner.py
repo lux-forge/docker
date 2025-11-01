@@ -72,7 +72,7 @@ class UserProvisioner:
         """
         
         # The name is the key to the user dictionary        
-        user_config["name"] = f"test{name}"
+        user_config["name"] = f"{name}"
         prepared_config = self.merge_config(section_config, user_config)
 
         # Append to users list for UserGenerator

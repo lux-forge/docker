@@ -199,3 +199,13 @@ media_swarm_stack:
       uid: 3903
     plex: 
       uid: 3904
+gluster:
+  default:
+    service: true
+    gid_next_available: false
+    uid_next_available: false
+    groups:
+      - gluster
+  users:
+    gluster:
+      uid: 2101

@@ -42,7 +42,7 @@ class UserGenerator:
         "remove_groups": []
     }
     VERSION = "1.0"
-    def __init__(self, config: dict, defaults: dict = {}, complexity: dict = PasswordEngine.PASSWORD_COMPLEXITY):
+    def __init__(self, config: dict, defaults: dict = {}, complexity: dict = PasswordEngine.PASSWORD_COMPLEXITY, username: str = ""):
 
         # Set the full config
         self.config = self._resolve_config(config, defaults)
@@ -60,7 +60,9 @@ class UserGenerator:
         # Initialize username
         self.name = None
         self.user_created = False
-        self.set_username(username=self.config.get("name"))
+        if not username:
+            username = self.config.get("name")
+        self.set_username(username=username)
 
         # Set basic attributes
         self.uid = None
@@ -88,7 +90,7 @@ class UserGenerator:
         # Set the user's groups
         self.add_to_groups()
 
-    def set_username(self, username: str = None) -> str:
+    def set_username(self, username: str = "") -> None:
         """
         Sets the username for the user.
         PARAMS: username: str - The desired username.
@@ -100,8 +102,10 @@ class UserGenerator:
         # Check if username is available
         try:
             entry = pwd.getpwnam(username)
-            logger.error(f"Username '{username}' already exists.")
-            raise ValueError(f"Username '{username}' already exists.")
+            logger.warn(f"Username '{username}' already exists.")
+            self.name = username
+            self.user_created = True
+            return
         except KeyError:
             logger.debug(f"Username '{username}' is available.")
 
@@ -115,7 +119,6 @@ class UserGenerator:
         self.name = username
         self.user_created = True
 
-       # Provisioning methods below...
     
     def is_service_account(self) -> bool:
         """
@@ -377,25 +380,56 @@ class UserGenerator:
         self.groups = actual_groups_added
 
     def set_ssh_key(self):
-        """ Generates an SSH key pair for the user.
-        """
+        """Generates an SSH key pair for the user."""
         if self.is_service_account():
             logger.debug(f"User '{self.name}' is a service account; skipping SSH key generation.")
             return
-        
+
         if not self.home:
             logger.error("Home directory must be set before generating SSH keys.")
             raise ValueError("Home directory must be set before generating SSH keys.")
-        
+
         if not self.config.get("ssh_key"):
             return
-        
+
+        logger.debug(f"Generating SSH key for user '{self.name}'.")
         ssh_dir = Path(self.home) / ".ssh"
-        ssh_dir.mkdir(parents=True, exist_ok=True)
-        subprocess.run(["ssh-keygen", "-t", "rsa", "-b", "4096", "-f", str(ssh_dir / "id_rsa"), "-N", ""], check=True)
+        
+        # Check if ssh dir exists, create if not
+        if not ssh_dir.exists():
+            logger.info(f"Creating .ssh directory for user '{self.name}'.")
+            # Sudo create .ssh directory
+            subprocess.run(["sudo", "mkdir", "-p", str(ssh_dir)], check=True)
+        else:
+            logger.warning(f".ssh directory already exists for user '{self.name}'. Skipping creation.")
+            return
+        
+        # Enforce ownership and permissions using sudo
+        logger.info(f"Generating SSH key for user '{self.name}' with sudo elevation.")
+        subprocess.run(["sudo", "chown", f"{self.name}:{self.name}", str(ssh_dir)], check=True)
+        subprocess.run(["sudo", "chmod", "700", str(ssh_dir)], check=True)
+
+        key_path = ssh_dir / "id_rsa"
+        subprocess.run([
+            "sudo", "ssh-keygen", "-t", "rsa", "-b", "4096",
+            "-f", str(key_path), "-N", ""
+        ], check=True)
+
+        subprocess.run(["sudo", "chown", f"{self.name}:{self.name}", str(key_path)], check=True)
+        subprocess.run(["sudo", "chown", f"{self.name}:{self.name}", str(key_path.with_suffix(".pub"))], check=True)
+
         self.ssh_key = True
-        logger.info(f"Generated SSH key for user {self.name}.")
+        logger.info(f"Generated SSH key for user '{self.name}' with sudo elevation.")
+
     
+    @staticmethod
+    def user_exists(username: str) -> bool:
+        try:
+            pwd.getpwnam(username)
+            return True
+        except KeyError:
+            return False
+
     @staticmethod
     def get_name_by_id(id_value: int, id_type: str = "uid") -> str | None:
         """
@@ -479,6 +513,32 @@ class UserGenerator:
         artifact = self.emit_user_tag()
         return artifact
     
+
+    @staticmethod
+    def delete_user(username: str):
+        """
+        Deletes a Linux user and their home directory.
+        Requires root privileges.
+        """
+        # Check username
+        if not username:
+            logger.error("Username must be provided to delete a user.")
+            raise ValueError("Username must be provided to delete a user.")
+        
+        # Check if user exists
+        if not UserGenerator.user_exists(username):
+            print(f"❌ User '{username}' does not exist. Cannot delete.")
+            return
+
+         # Proceed to delete the user
+        try:
+            subprocess.run(["sudo", "userdel", "--remove", username], check=True)
+            subprocess.run(["sudo", "rm", "-rf", f"/home/{username}"], check=True)
+            logger.info(f"Deleted user '{username}' with home directory.")
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Failed to delete user '{username}': {e}")
+
+
     def provision_user(self):
         tag = self.emit_user_tag()
         logger.info(f"Provisioned user '{self.name}' with UID {self.uid}, GID {self.gid}.")

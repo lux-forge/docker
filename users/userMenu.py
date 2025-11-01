@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-
+#!/docker/.luxforge-venv/bin/python3
 # userMenu.py
 # Author: Luxforge
 # Interactive CLI menu for user management tasks.
@@ -13,6 +12,7 @@ import subprocess, pwd, grp
 from tabulate import tabulate
 from rich.console import Console
 from rich.table import Table
+
 
 # Initialize logger - logger env is local to this file
 logger_env_path = Path(__file__) / "logger.env"
@@ -35,90 +35,21 @@ class UserMenu(Menu):
             "L": ("List Users", self.list_users),
             "F": ("Create Users from File", self.create_users_from_file),
         }    
-    def create_user(self, 
-        username: str = None, 
-        password: str = None, 
-        uid: int = None, 
-        gid: int = None, 
-        home_dir: bool = None, 
-        shell: str = "/bin/bash", 
-        service_account: bool = False,
-        ssh_key: bool = False,
-        known_hosts: bool = False
-    ):
+    def create_user(self):
         """
-        Create a new user with the given parameters.
-        PARAMS: username: str - The username for the new user.
-                password: str - The password for the new user.
-                uid: int - The user ID for the new user.
-                gid: int - The group ID for the new user.
-                home_dir: str - The home directory for the new user.
-                shell: str - The login shell for the new user.
-                service_account: bool - Whether this is a service account (no login).
-                ssh_key: bool - Whether to generate SSH keys for the user.
-                known_hosts: bool - Whether to set up known_hosts for the user.
+        Create a new user interactively.
+        PARAMS: None
         RETURNS: None
         """
-        # No validation required
+        username = input("Enter a username (leave blank to prompt): ")
+        username = self.__create_username(username=username)
+
+        is_service_account = input("Is this a service account? (y/n): ").strip().lower() == "y"
+        from userGenerator import UserGenerator
+        UserGenerator(username=input("Enter username: "))
         
-        # Create the username
-        username = self.__create_username(username=username)    
 
-        # Pivot to creating a service account if specified
-        if service_account:
-            self.__create_service_account(username=username)
-            return
-
-        if not password:
-            password = input("Enter the password: ")
-        if not uid:
-            uid = input("Enter the UID (or press Enter to skip): ")
-            uid = int(uid) if uid else None
-        if not gid:
-            gid = input("Enter the GID (or press Enter to skip): ")
-            gid = int(gid) if gid else None
-        if not home_dir:
-            home_dir = input("Enter the home directory (or press Enter to skip): ")
-        if not shell:
-            shell = input("Enter the login shell (or press Enter to skip): ")
-        if not ssh_key:
-            ssh_key = input("Generate SSH key? (y/n): ").lower() == "y"
-        if not known_hosts:
-            known_hosts = input("Set up known_hosts? (y/n): ").lower() == "y"
-
-        print(f"User {username} created successfully.")
-
-  
-
-
-        
-        env = EnvProfile()
-
-        env_files = find_all_files(f"{paths.root}/users/", "*.env")
-
-        # Extract the example env file
-        for file in env_files:
-            if file.name == "EXAMPLE.env":
-                example_env_file = file
-                env_files.remove(file)
-                break
-        
-        # Check if there are any other env files
-        if not env_files:
-            env_files = [example_env_file] 
-            print(f"[WARNING] No user .env files found in {paths.root}/users/. Using example file: {example_env_file}")
-            # Save the env file to the users dir
-            os.makedirs(f"{paths.root}/users/", exist_ok=True)
-            import shutil
-            shutil.copy(example_env_file, f"{paths.root}/users/changeme.env")
-            print(f"[INFO] Created example user .env file: {paths.root}/users/changeme.env")
-        
-        # Load the env files
-        env.load_keys(env_files, skip_list=[])
-
-        # Now we can use the env variables - they're available in env_profile.loaded_keys and os.environ
-
-    def validate_username(self, username: str=None) -> list:
+    def validate_username(self, username: str="") -> list | bool:
         """
         Validate a username based on common Linux username rules.
         PARAMS: username: str - The username to validate.
@@ -161,8 +92,8 @@ class UserMenu(Menu):
         # Already exists
         try:
             pwd.getpwnam(username)
-            logger.error(f"Username '{username}' already exists")
-            return False
+            logger.warn(f"Username '{username}' already exists")
+            return True
         
         except KeyError:
             pass  # Username is available
@@ -185,11 +116,12 @@ class UserMenu(Menu):
         RETURNS: None
         """
         self.create_user(username=username, service_account=True)
-       
     def delete_user(self):
         username = input("Enter the username to delete: ")
-        # Logic to delete user goes here
-        print(f"User {username} deleted successfully.")
+        
+        from userGenerator import UserGenerator
+        UserGenerator.delete_user(username=username)
+        input("Press Enter to return to the menu...")
 
     def __get_all_user_details(self) -> list:
         """
@@ -243,7 +175,13 @@ class UserMenu(Menu):
         input("Press Enter to continue...")
 
     def create_users_from_file(self):
-        logger.warning("Create users from file functionality is not yet implemented.")
+        # Uses the userprovisioner class to create users from a file
+        from userProvisioner import UserProvisioner
+       
+        provisioner = UserProvisioner()
+        results = provisioner.provision_all()
+        for result in results:
+            print(result)
         input("Press Enter to return to the menu...")
 
 
