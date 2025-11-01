@@ -1,0 +1,94 @@
+- name: "testuser_basic"
+  uid: 1800
+  gid: 1800
+  shell: "/bin/bash"
+  home: "/home/testuser_basic"
+  generate_password: True
+  groups: ["docker"]
+  service: False
+
+- name: "testuser_existing"
+  uid: 1000  # likely already taken
+  gid: 1000
+  shell: "/bin/bash"
+  home: "/home/testuser_existing"
+  generate_password: True
+  groups: ["docker", "audit"]
+  service: False
+
+- name: "testsvc_minimal"
+  uid: 1810
+  gid: 1810
+  shell: "/usr/sbin/nologin"
+  home: "/var/lib/testsvc_minimal"
+  generate_password: False
+  groups: []
+  service: True
+
+- name: "testsvc_with_home"
+  uid: 1811
+  gid: 1811
+  shell: "/usr/sbin/nologin"
+  home: "/var/lib/testsvc_with_home"
+  generate_password: False
+  groups: ["infra"]
+  service: True
+
+- name: "testuser_grouping"
+  uid: 1820
+  gid: 1820
+  shell: "/bin/bash"
+  home: "/home/testuser_grouping"
+  generate_password: True
+  groups: ["docker", "audit"]
+  add_groups: ["monitoring", "infra"]
+  remove_groups: ["audit", "nogroup"]
+  service: False
+
+- name: "testuser_edge_shell"
+  uid: 1830
+  gid: 1830
+  shell: "/bin/false"
+  home: "/home/testuser_edge_shell"
+  generate_password: True
+  groups: ["docker"]
+  service: False
+
+- name: "testuser_no_home"
+  uid: 1840
+  gid: 1840
+  shell: "/bin/bash"
+  home: None
+  generate_password: True
+  groups: ["docker"]
+  service: False
+
+- name: "testuser_explicit_password"
+  uid: 1850
+  gid: 1850
+  shell: "/bin/bash"
+  home: "/home/testuser_explicit_password"
+  password: "S3cur3P@ssw0rd!"
+  generate_password: False
+  groups: ["docker"]
+  service: False
+
+- name: "testuser_ssh"
+  uid: 1860
+  gid: 1860
+  shell: "/bin/bash"
+  home: "/home/testuser_ssh"
+  generate_password: True
+  ssh_key: True
+  known_hosts: True
+  groups: ["docker"]
+  service: False
+
+- name: "testuser_numeric"
+  uid: 1870
+  gid: 1870
+  shell: "/bin/bash"
+  home: "/home/12345"
+  generate_password: True
+  groups: ["docker"]
+  service: False
