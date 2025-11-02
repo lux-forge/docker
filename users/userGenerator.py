@@ -323,6 +323,63 @@ class UserGenerator:
         except KeyError:
             return False
 
+    def gid_unavailable_prompt(self, gid: int) -> bool:
+        """ Prompts the user if a GID is unavailable."""
+        print(f"GID {gid} is already in use.")
+        print("Select from the below options:")
+        print("  [n] Specify a different GID")
+        print("  [a] Auto-assign next available GID")
+        print("  [e] Exit the process -- default option")
+        print("")
+        while True:
+            action = input("Enter 'n' to specify, 'a' to auto-assign, or 'e' to exit -- default [n/a/X]: ").strip().lower()
+
+            # Handle user input - loops until resolved or recalls this method
+            if action == 'n':
+                input_gid = input("Enter a different GID: ").strip()
+                return self.create_group_with_gid(self, gid=input_gid)
+
+            # Auto-assign next available GID
+            elif action == 'a':
+                next_gid = self.get_next_available_id(gid, id_type="gid")
+                logger.info(f"Auto-assigning next available GID {next_gid}.")
+                return self.create_group_with_gid(self, gid=next_gid)
+            
+            # exit option
+            elif action == 'e' or action == '' or action == 'x':
+                logger.error(f"Exiting due to unavailable GID {gid}.")
+                raise SystemExit(f"GID {gid} is unavailable. Exiting.")
+            
+            # invalid input
+            else:
+                logger.warning("Invalid input. Please enter 'n', 'a', or 'e'.")
+
+    def create_group_with_gid(self, group: str, gid: int) -> bool:
+        """ Creates a group with a specified GID."""
+        
+        # Check if GID is viable
+        try:
+            gid = int(gid)     
+        except ValueError:
+            logger.error("Invalid GID input. Please enter a numeric value.")
+            return self.create_group(group)
+
+        # Check if GID is available    
+        if not self.id_is_available(gid, id_type="gid"):
+
+            # GID is unavailable, prompt user for action - enters a loop until resolved or recalls this method
+            self.gid_unavailable_prompt(self, gid)
+        
+        # Create the group with the specified GID
+        try:
+            subprocess.run(["sudo", "groupadd", "-g", str(gid), group], check=True)
+            logger.info(f"Group '{group}' created with GID {gid}.")
+            return True
+        
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Failed to create group '{group}' with GID {gid}: {e}")
+            raise ValueError(f"Failed to create group '{group}' with GID {gid}. {e}")
+
     def create_group(self, group: str) -> bool:
         """ Asks the user if they want to create a missing group."""
         # Warn the group does not exist, ask user to create, skip or exit
@@ -336,7 +393,12 @@ class UserGenerator:
         while True:
             action = input("Enter 'c' to create, 's' to skip, or 'x' to exit -- default [c/s/X]: ").strip().lower()
             if action == 'c':
-                subprocess.run(["sudo", "groupadd", group], check=True)
+                gid = None
+                # Check if user wants to specify a GID
+                gid_input = input(f"Enter GID for group '{group}' or press Enter to auto-assign (takes the next available ID after this user's ID): ").strip()
+                if gid_input:
+                    return self.create_group_with_gid(group, gid_input) 
+                subprocess.run(["sudo", "groupadd", "-g", str(gid), group], check=True)
                 logger.info(f"Group '{group}' created.")
                 return True
                 
