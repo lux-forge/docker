@@ -11,9 +11,6 @@ logs/
 # Ignore git files
 .git/
 
-# Ignore config files
-config/*
-
 # Ignore venv folders
 *venv/
 

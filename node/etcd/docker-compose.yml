@@ -22,8 +22,8 @@ services:
     env_file:
       - .env
     volumes:
-      - /mnt/vols_vol/individual/${NODE_NAME}/etcd/etcd_data:/etcd-data
-      - /mnt/docker_vol/etcd/certs:/etc/etcd/certs:ro
+      - ${NODE_VOL}/etcd/etcd_data:/etcd-data
+      - ${SHARED_VOL}/etcd/certs:/etc/etcd/certs:ro
     networks:
       management:
         ipv4_address: ${NODE_IP}
