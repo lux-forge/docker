@@ -8,29 +8,18 @@ services:
   watchtower:
     container_name: watchtower
     image: containrrr/watchtower
-    env_file:
-      - watchtower.env
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    networks:
-      management:
-        ipv4_address: ${WATCHTOWER_IP}
     restart: always
 
   # Container management
-  portainer:
+  portainer: # https://github.com/portainer/portainer
     image: portainer/portainer-ce:latest
     container_name: portainer
-    env_file:
-      - portainer.env
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - portainer-data:/data
+      - ${NODE_VOL}/portainer/data:/data
     restart: always
     networks:
       management:
         ipv4_address: ${PORTAINER_IP}
-
-# Volumes for persistent data - do not use the NAS for these
-volumes:
-  portainer-data:

@@ -26,5 +26,4 @@ services:
       - ${SHARED_VOL}/etcd/certs:/etc/etcd/certs:ro
     networks:
       management:
-        ipv4_address: ${NODE_IP}
-    user: "${ETCD_USER}"
+        ipv4_address: ${ETCD_IP}
