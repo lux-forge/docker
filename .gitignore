@@ -25,6 +25,8 @@ certs/
 
 !certs/.keep
 
+# Ignore Vols
+**/vols/
 
 ##### EXCEPTIONS #####
 # Allow all examples
