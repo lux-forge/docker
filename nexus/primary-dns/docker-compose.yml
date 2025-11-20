@@ -1,5 +1,5 @@
 networks:
-  quinly-services:
+  services:
     external: true
     
 services:
@@ -7,26 +7,23 @@ services:
   pihole:
     container_name: pihole
     image: pihole/pihole:latest
-    # For DHCP it is recommended to remove these ports and instead add: network_mode: "host"
     environment:
       TZ: ${TZ}
-      WEBPASSWORD: ${WEBPASSWORD}
+      WEBPASSWORD: ${PIHOLE_PASSWORD} # Password for the web interface
       FTLCONF_misc_etc_dnsmasq_d: "true"
-    # Volumes store your data between container upgrades
+    group_add:
+      - ${PIHOLE_GID}
     volumes:
-      - pihole-etc:/etc/pihole
-      - pihole-dnsmasq:/etc/dnsmasq.
-      - ./02-quinly-wildcard-dns.conf:/etc/dnsmasq.d/02-quinly-wildcard-dns.conf
+      - ./vols/pihole/primary/etc:/etc/pihole
+      - ./vols/pihole/primary/dnsmasq:/etc/dnsmasq.d
+      - ${NEXUS_VOL}/pihole/03-wildcard-dns.conf:/etc/dnsmasq.d/03-wildcard-dns.conf
       #   https://github.com/pi-hole/docker-pi-hole#note-on-capabilities
       #cap_add:
       #- NET_ADMIN # Required if you are using Pi-hole as your DHCP server, else not needed
     restart: unless-stopped
-    ports:
-      - 53:53
     networks:
-      quinly-services:
-        ipv4_address: ${IP_ADDRESS}
-    
-volumes:
-  pihole-etc:
-  pihole-dnsmasq:
+      services:
+        ipv4_address: ${PIHOLE_IP}
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1

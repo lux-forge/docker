@@ -2,49 +2,42 @@
 # https://docs.docker.com/reference/compose-file/networks/
 
 services:
-  # Unifi WiFi controller
+  # Unifi WiFi controller. Github: https://github.com/linuxserver/docker-unifi-controller
   unifi:
-    image: lscr.io/linuxserver/unifi-controller:latest
+    image: ghcr.io/jacobalberty/unifi-docker:latest
     container_name: unifi
     environment:
-      - PUID=1000
-      - PGID=1000
       - MEM_LIMIT=1024 #optional
       - MEM_STARTUP=1024 #optional
     volumes:
-      - unifi-config:/config
+      - ${NEXUS_VOL}/unifi/config:/config
     restart: unless-stopped
     networks:
-      quinly-management:
-        ipv4_address: 10.10.99.12
+      management:
+        ipv4_address: ${UNIFI_IP}
+    group_add:
+      - ${UNIFI_GID} 
 
-  nginx:
+  nginx: # NGINX Proxy Manager - Web UI for managing reverse proxies and SSL. Github: https://github.com/NginxProxyManager/nginx-proxy-manager
     image: "jc21/nginx-proxy-manager:latest"
     container_name: nginx
     restart: unless-stopped
-
     volumes:
-      - nginx-data:/data
-      - nginx-certs:/etc/letsencrypt
-      - ./98-themepark-npm:/etc/cont-init.d/98-themepark
+      - ${NEXUS_VOL}/nginx/data:/data
+      - ${NEXUS_VOL}/nginx/certs:/etc/letsencrypt
+      - ${NEXUS_VOL}/nginx/98-themepark-npm:/etc/cont-init.d/98-themepark
     environment:
       - TP_THEME=dark
-    ports:
-      - 80:80
-      - 443:443
     networks:
-      quinly-services:
-        ipv4_address: 10.10.0.20
+      services:
+        ipv4_address: ${NGINX_IP}
+    group_add:
+      - ${NGINX_GID}
 
-
-
-volumes:
-  portainer-data:
-  cloudbeaver-workspace:
-  unifi-config:
-  nginx-data:
+networks:
+  management:
     external: true
-    name: administrator_nginx-data
-  nginx-certs:
+    name: management
+  services:
     external: true
-    name: administrator_nginx-certs
+    name: services
