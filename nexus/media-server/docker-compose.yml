@@ -81,7 +81,7 @@ services:
     environment:
       - TZ=${TZ}
       - PLEX_CLAIM=${PLEX_CLAIM} #optional
-      #- PLEX_IP=${PLEX_IP}
+      - PLEX_IP=${PLEX_IP}
     hostname: Mordor
     volumes:
       - ./vols/plex/config:/config
