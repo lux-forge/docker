@@ -37,7 +37,9 @@ services:
       services:
         ipv4_address: ${JELLYFIN_IP}
 
+
   jellyseerr: # https://docs.seerr.dev/getting-started/docker
+    # Port 5055
     image: fallenbagel/jellyseerr:latest
     container_name: jellyseerr
     environment:
@@ -65,7 +67,7 @@ services:
   # Media server - https://github.com/plexinc/pms-docker/tree/master
   plex:
     container_name: plex
-    image: lscr.io/linuxserver/plex:1.40.5.8921-836b34c27-ls234
+    image: lscr.io/linuxserver/plex:latest
     restart: unless-stopped
     #ports:
     #  - 32400:32400/tcp
@@ -79,7 +81,7 @@ services:
     environment:
       - TZ=${TZ}
       - PLEX_CLAIM=${PLEX_CLAIM} #optional
-      - PLEX_IP=${PLEX_IP}
+      #- PLEX_IP=${PLEX_IP}
     hostname: Mordor
     volumes:
       - ./vols/plex/config:/config
@@ -97,6 +99,7 @@ services:
   # Tautulli - Monitors, analyses and notifies about Plex
   # https://github.com/Tautulli/Tautulli
   tautulli:
+    # Port 8181
     image: ghcr.io/tautulli/tautulli
     container_name: tautulli
     restart: always
