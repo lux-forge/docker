@@ -18,7 +18,7 @@ services:
     container_name: portainer
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ${NODE_VOL}/portainer/data:/data
+      - ./vols/portainer/data:/data
     restart: always
     networks:
       management:
