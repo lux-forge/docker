@@ -1,0 +1,29 @@
+networks:
+  services:
+    external: true
+    
+services:
+  # More info at https://github.com/pi-hole/docker-pi-hole/ and https://docs.pi-hole.net/
+  pihole:
+    container_name: pihole
+    image: pihole/pihole:latest
+    environment:
+      TZ: ${TZ}
+      WEBPASSWORD: ${PIHOLE_PASSWORD} # Password for the web interface
+      FTLCONF_misc_etc_dnsmasq_d: "true"
+    group_add:
+      - ${PIHOLE_GID}
+    volumes:
+      - ./vols/pihole/primary/etc:/etc/pihole
+      - ./vols/pihole/primary/dnsmasq:/etc/dnsmasq.d
+      - ${NEXUS_VOL}/pihole/03-wildcard-dns.conf:/etc/dnsmasq.d/03-wildcard-dns.conf
+      #   https://github.com/pi-hole/docker-pi-hole#note-on-capabilities
+      #cap_add:
+      #- NET_ADMIN # Required if you are using Pi-hole as your DHCP server, else not needed
+    restart: unless-stopped
+    networks:
+      services:
+        ipv4_address: ${PIHOLE_IP}
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
