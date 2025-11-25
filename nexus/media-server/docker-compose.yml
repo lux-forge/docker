@@ -4,6 +4,9 @@ networks:
   services:
     name: services
     external: true
+  BBBG:
+    name: BBBG
+    external: true
 
 services:
 
@@ -80,7 +83,7 @@ services:
     #  - 32414:32414/udp
     environment:
       - TZ=${TZ}
-      - PLEX_CLAIM=${PLEX_CLAIM} #optional
+      - PLEX_CLAIM=claim-jPKsttc9yKaGcHTyZJpk #optional
       - PLEX_IP=${PLEX_IP}
     hostname: Mordor
     volumes:
