@@ -1,0 +1,31 @@
+# Use this docker-compose file to run a single etcd node
+# Need to run common first to create the network
+
+networks:
+  nexus:
+    name: nexus
+    external: true
+
+services: # github: <https://github.com/coreos/etcd>
+  etcd:
+    # For other versions see https://quay.io/repository/coreos/etcd?tab=tags
+    # Make sure to use the same version across all nodes in a cluster
+    image: quay.io/coreos/etcd:v3.6.6
+    container_name: etcd
+    hostname: ${NODE_NAME}
+    entrypoint: ["/usr/local/bin/etcd"]
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: "1m"
+        max-file: "5"
+    env_file:
+      - .env
+    volumes:
+      - ./vols/etcd/etcd_data:/etcd-data
+      - ./vols/etcd/certs:/etc/etcd/certs:ro
+    networks:
+      nexus:
+        ipv4_address: ${ETCD_IP}
+    group_add:
+      - "${ETCD_GID}"

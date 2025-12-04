@@ -1,0 +1,88 @@
+networks:
+  quinly-services:
+    name: quinly-services
+    external: true
+  quinly-docker-backend:
+    name: quinly-docker-backend
+    external: true
+
+services:
+  redis:
+    container_name: auth-redis
+    image: docker.io/library/redis:alpine
+    command: --save 60 1 --loglevel warning
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      start_period: 20s
+      interval: 30s
+      retries: 5
+      timeout: 3s
+    volumes:
+      - auth-redis:/data
+    networks:
+      quinly-docker-backend:
+      quinly-services:
+        ipv4_address: 10.10.0.82
+
+  server:
+    container_name: auth-server
+    image: ghcr.io/goauthentik/server:2025.2.2
+    restart: unless-stopped
+    command: server
+    environment:
+      AUTHENTIK_REDIS__HOST: auth-redis
+      AUTHENTIK_POSTGRESQL__HOST: db.quinly.co.uk
+      AUTHENTIK_POSTGRESQL__USER: $PG_USER
+      AUTHENTIK_POSTGRESQL__NAME: $PG_DB
+      AUTHENTIK_POSTGRESQL__PASSWORD: $PG_PASS
+    volumes:
+      - auth-media:/media
+      - auth-custom-templates:/templates
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      quinly-docker-backend:
+      quinly-services:
+        ipv4_address: 10.10.0.80
+  worker:
+    container_name: auth-worker
+    image: ghcr.io/goauthentik/server:2025.2.2
+    restart: unless-stopped
+    command: worker
+    environment:
+      AUTHENTIK_REDIS__HOST: auth-redis
+      AUTHENTIK_POSTGRESQL__HOST: db.quinly.co.uk
+      AUTHENTIK_POSTGRESQL__USER: $PG_USER
+      AUTHENTIK_POSTGRESQL__NAME: $PG_DB
+      AUTHENTIK_POSTGRESQL__PASSWORD: $PG_PASS
+    # `user: root` and the docker socket volume are optional.
+    # See more for the docker socket integration here:
+    # https://goauthentik.io/docs/outposts/integrations/docker
+    # Removing `user: root` also prevents the worker from fixing the permissions
+    # on the mounted folders, so when removing this make sure the folders have the correct UID/GID
+    # (1000:1000 by default)
+    user: root
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - auth-media:/media
+      - auth-certs:/certs
+      - auth-custom-templates:/templates
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      quinly-docker-backend:
+      quinly-services:
+        ipv4_address: 10.10.0.81
+
+volumes:
+  auth-redis:
+  auth-media:
+  auth-certs:
+  auth-custom-templates:

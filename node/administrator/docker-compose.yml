@@ -1,0 +1,43 @@
+# Prep the networks - this allows for containers to talk on the main network
+# https://docs.docker.com/reference/compose-file/networks/
+
+services:
+  # Unifi WiFi controller. Github: https://github.com/linuxserver/docker-unifi-controller
+  unifi:
+    image: ghcr.io/jacobalberty/unifi-docker:latest
+    container_name: unifi
+    environment:
+      - MEM_LIMIT=1024 #optional
+      - MEM_STARTUP=1024 #optional
+    volumes:
+      - ${NEXUS_VOL}/unifi/config:/config
+    restart: unless-stopped
+    networks:
+      management:
+        ipv4_address: ${UNIFI_IP}
+    group_add:
+      - ${UNIFI_GID} 
+
+  nginx: # NGINX Proxy Manager - Web UI for managing reverse proxies and SSL. Github: https://github.com/NginxProxyManager/nginx-proxy-manager
+    image: "jc21/nginx-proxy-manager:latest"
+    container_name: nginx
+    restart: unless-stopped
+    volumes:
+      - ${NEXUS_VOL}/nginx/data:/data
+      - ${NEXUS_VOL}/nginx/certs:/etc/letsencrypt
+      - ${NEXUS_VOL}/nginx/98-themepark-npm:/etc/cont-init.d/98-themepark
+    environment:
+      - TP_THEME=dark
+    networks:
+      services:
+        ipv4_address: ${NGINX_IP}
+    group_add:
+      - ${NGINX_GID}
+
+networks:
+  management:
+    external: true
+    name: management
+  services:
+    external: true
+    name: services

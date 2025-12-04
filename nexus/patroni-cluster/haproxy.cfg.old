@@ -1,0 +1,19 @@
+listen postgres_write
+    bind *:5432
+    mode            tcp
+    option httpchk
+    http-check expect status 200
+    default-server inter 10s fall 3 rise 3 on-marked-down shutdown-sessions
+    server postgresql_1 10.10.0.11:5432 check port 8008
+    server postgresql_2 10.10.0.12:5432 check port 8008
+    server postgresql_3 10.10.0.13:5432 check port 8008
+
+listen postgres_read
+    bind *:5433
+    mode            tcp
+    balance leastconn
+    option pgsql-check user admin
+    default-server inter 10s fall 3 rise 3 on-marked-down shutdown-sessions
+    server postgresql_1 10.10.0.11:5432
+    server postgresql_2 10.10.0.12:5432
+    server postgresql_3 10.10.0.13:5432

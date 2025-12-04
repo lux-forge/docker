@@ -1,0 +1,137 @@
+networks:
+  quinly-services:
+    name: quinly-services
+    external: true
+
+services:
+  etcd:
+    image: quay.io/coreos/etcd:v3.4.33
+    container_name: etcd1
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: "1m"
+        max-file: "5"
+    volumes:
+      - etcdnode_data:/etcd-data
+    environment:
+      ETCD_DATA_DIR: /etcd-data
+      ETCD_NAME: etcd1
+      ETCD_INITIAL_ADVERTISE_PEER_URLS: http://${ETCD1_IP}:2380
+      ETCD_LISTEN_PEER_URLS: http://0.0.0.0:2380
+      ETCD_LISTEN_CLIENT_URLS: http://0.0.0.0:2379
+      ETCD_ADVERTISE_CLIENT_URLS: http://${ETCD1_IP}:2379
+      # ETCD_INITIAL_CLUSTER: etcdnode01=http://etcdnode01:2380,etcdnode02=http://${ETCD2_IP}:2380
+      ETCD_INITIAL_CLUSTER: haproxy01=http://${HA_PROXY_IP}:2380,etcd1=http://${ETCD1_IP}:2380,etcd2=http://${ETCD2_IP}:2380
+      ETCD_INITIAL_CLUSTER_TOKEN: etcd-postgresl-cluster
+      ETCD_INITIAL_CLUSTER_STATE: new
+    ports:
+      - "2379:2379"
+      - "2380:2380"
+      # - 4001:4001
+    networks:
+      quinly-services:
+        ipv4_address: ${ETCD1_IP}
+
+  patroni:
+    container_name: patroni1
+    build:
+      dockerfile: ./patroni.dockerfile
+      context: .
+      target: postgres-patroni
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: "1m"
+        max-file: "5"
+    env_file:
+      - .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./patroni.yml:/venv/etc/patroni.yml
+    ports:
+      - "5432:5432"
+      - "8008:8008"
+    networks:
+      quinly-services:
+        ipv4_address: ${PATRONI1_IP}
+    depends_on:
+      - etcd
+
+  etcd2:
+    image: quay.io/coreos/etcd:v3.4.33
+    container_name: etcd2
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: "1m"
+        max-file: "5"
+    volumes:
+      - etcdnode_data2:/etcd-data
+    environment:
+      ETCD_DATA_DIR: /etcd-data
+      ETCD_NAME: etcd2
+      ETCD_INITIAL_ADVERTISE_PEER_URLS: http://${ETCD2_IP}:2380
+      ETCD_LISTEN_PEER_URLS: http://0.0.0.0:2380
+      ETCD_LISTEN_CLIENT_URLS: http://0.0.0.0:2379
+      ETCD_ADVERTISE_CLIENT_URLS: http://${ETCD2_IP}:2379
+      ETCD_INITIAL_CLUSTER: haproxy=http://${HA_PROXY_IP}:2380,etcd1=http://${ETCD1_IP}:2380,etcd2=http://${ETCD2_IP}:2380
+      ETCD_INITIAL_CLUSTER_TOKEN: etcd-postgres-cluster
+      ETCD_INITIAL_CLUSTER_STATE: new
+    ports:
+      - "2379:2379"
+      - "2380:2380"
+      # - 4001:4001
+    networks:
+      quinly-services:
+        ipv4_address: ${ETCD2_IP}
+
+  patroni2:
+    container_name: patroni2
+    build:
+      dockerfile: ./patroni.dockerfile
+      context: .
+      target: postgres-patroni
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: "1m"
+        max-file: "5"
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      DB_USER: ${DB_USER}
+      DB_NAME: ${DB_NAME}
+    volumes:
+      - postgres_data2:/var/lib/postgresql/data
+      - ./patroni2.yml:/venv/etc/patroni.yml
+    ports:
+      - "5432:5432"
+      - "8008:8008"
+    networks:
+      quinly-services:
+        ipv4_address: ${PATRONI2_IP}
+    depends_on:
+      - etcd2
+
+  haproxy:
+    image: haproxy:latest
+    container_name: haproxy
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: "1m"
+        max-file: "5"
+    volumes:
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    ports:
+      - "5000:5000" # Expose HAProxy on port 5000
+    networks:
+      quinly-services:
+        ipv4_address: ${HA_PROXY_IP}
+
+volumes:
+  postgres_data:
+  etcdnode_data:
+  postgres_data2:
+  etcdnode_data2:

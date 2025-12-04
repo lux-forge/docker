@@ -1,0 +1,39 @@
+networks:
+  services:
+    external: true
+    
+services:
+  # More info at https://github.com/pi-hole/docker-pi-hole/ and https://docs.pi-hole.net/
+  pihole:
+    container_name: pihole
+    image: pihole/pihole:latest
+    environment:
+      TZ: ${TZ}
+      WEBPASSWORD: ${PIHOLE_PASSWORD} # Password for the web interface
+      FTLCONF_misc_etc_dnsmasq_d: "true"
+    group_add:
+      - ${PIHOLE_GID}
+    volumes:
+      - ./vols/pihole/secondary/etc:/etc/pihole
+      - ./vols/pihole/secondary/dnsmasq:/etc/dnsmasq.d
+      #   https://github.com/pi-hole/docker-pi-hole#note-on-capabilities
+      #cap_add:
+      #- NET_ADMIN # Required if you are using Pi-hole as your DHCP server, else not needed
+    restart: unless-stopped
+    networks:
+      services:
+        ipv4_address: ${SECONDARY_DNS_IP}
+    dns:
+      - ${PRIMARY_DNS_IP}  # Primary DNS server (e.g., your main Pi-hole)
+      - ${TERTIARY_DNS_IP}
+      - ${FOURTHARY_DNS_IP}
+
+  nebula-sync:
+    image: ghcr.io/lovelaze/nebula-sync:latest
+    container_name: nebula-sync
+    environment:
+    - PRIMARY=https://${PRIMARY_DNS_NAME}|${PIHOLE_PASSWORD}
+    - REPLICAS=https://${SECONDARY_DNS_NAME}|${PIHOLE_PASSWORD}
+    - FULL_SYNC=true
+    - RUN_GRAVITY=true
+    - CRON=0 * * * *

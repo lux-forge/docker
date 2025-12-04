@@ -1,0 +1,77 @@
+scope: quinly-patroni-cluster
+namespace: /patroni/
+name: patroni-node-2
+
+log:
+  format: "%(asctime)s %(levelname)s: %(message)s"
+  # ERROR INFO DEBUG
+  level: DEBUG
+  max_queue_size: 1000
+  traceback_level: DEBUG
+  type: plain
+
+restapi:
+  listen: 0.0.0.0:8008
+  connect_address: 10.10.0.12:8008
+
+etcd3:
+  hosts:
+    - 10.10.0.14:2379
+    - 10.10.0.15:2379
+    - 10.10.0.16:2379
+
+bootstrap:
+  dcs:
+    ttl: 30
+    loop_wait: 10
+    retry_timeout: 10
+    maximum_lag_on_failover: 1048576
+  postgresql:
+    use_pg_rewind: true
+    parameters:
+      max_connections: 100
+      max_worker_processes: 8
+      max_locks_per_transaction: 64
+  initdb:
+    - encoding: UTF8
+    - data-checksums
+  users:
+    admin:
+      password: admin
+      options:
+        - createrole
+        - createdb
+
+postgresql:
+  listen: 0.0.0.0:5432
+  connect_address: 10.10.0.12:5432
+  data_dir: /var/lib/postgresql/data
+  bin_dir: /usr/local/bin
+  pgpass: /tmp/pgpass
+  pg_hba:
+    - host replication quinly_replicator 127.0.0.1/32 md5
+    - host replication quinly_replicator  10.10.0.11/32 md5
+    - host replication quinly_replicator  10.10.0.12/32 md5
+    - host replication quinly_replicator  10.10.0.13/32 md5
+    # poi replicator
+    - host replication quinly_admin  10.10.0.11/32 trust
+    - host replication quinly_admin  10.10.0.12/32 trust
+    - host replication quinly_admin  10.10.0.13/32 trust
+    - host all all 0.0.0.0/0 md5
+  authentication:
+    replication:
+      username: quinly_replicator
+      password: cudR2XgLSCMWNCYYbuLdxVh3kcrcYYH3
+    superuser:
+      username: quinly_admin
+      password: gjoZSLyU4ZRz5LAya9E7YqKSTqZMgipX
+  tags:
+    nofailover: false
+    noloadbalance: false
+    clonefrom: false
+    nosync: false
+
+watchdog:
+  mode: "off"
+  device: /dev/watchdog
+  safety_margin: 5

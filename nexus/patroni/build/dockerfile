@@ -1,0 +1,53 @@
+# Build originated from https://medium.com/@exclusivetech.ch/setting-up-an-etcd-patroni-postgresql-and-haproxy-cluster-0ed2d55160ec
+
+# Use alpine build of postgres
+FROM debian:latest 
+
+# Install dependencies & etcd server
+RUN apt update && \
+	apt-get install -y vim nano gnupg2 wget curl
+
+# Install postgres
+RUN apt update && \
+	apt install -y postgresql-common && \
+	echo -ne '\n' | /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh && \
+	apt update && \
+	apt install -y postgresql postgresql-contrib
+
+# Stop and disable the postgres so it can be managed by patroni
+RUN service postgresql stop && \
+	update-rc.d postgresql disable
+
+# Get ETCD
+RUN wget https://github.com/etcd-io/etcd/releases/download/v3.5.20/etcd-v3.5.20-linux-amd64.tar.gz && \
+	tar xvf etcd-*.tar.gz && \
+	rm etcd*.tar.gz -rf && \
+	mv etcd-* etcd && \
+	mv etcd/etcd* /usr/local/bin/
+
+# Create user for ETCD
+RUN useradd --system --home /var/lib/etcd --shell /bin/false etcd
+
+# Move the etc.env file
+COPY etcdenv /etc/etcd/etcd.env
+COPY etcd.service /etc/systemd/system/etcd.service
+
+# Make dir for etcd
+RUN mkdir -p /var/lib/etcd && \
+	chown -R etcd:etcd /var/lib/etcd
+
+# Start the service
+RUN service etcd start
+
+# Add in the working directories
+WORKDIR /var/etcd/
+WORKDIR /var/lib/etcd/
+
+# Expose applicable ports  https://github.com/etcd-io/etcd/blob/main/Dockerfile
+EXPOSE 2379 2380
+
+# Run the container as the user
+USER etcd
+
+# Define default command.
+CMD ["/usr/local/bin/etcd"]
