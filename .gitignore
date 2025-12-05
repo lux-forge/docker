@@ -6,11 +6,15 @@
 *.log
 logs/
 
+# Ignore filled patroni config
+patroni.yml
+
 # Ignore VSCode settings
 .vscode/
 
 # Ignore the wildcard
 03-wildcard*.conf
+
 # Ignore git files
 .git/
 
