@@ -1,10 +1,14 @@
-scope: quinly-patroni-cluster
+# Patroni configuration file generated from template /docker/nexus/patroni/config/patroni-template.yml
+# Date: Thu  4 Dec 23:23:53 GMT 2025
+
+
+scope: luxforge_crafted_nexus
 namespace: /patroni/
-name: charlemagne-patroni # Needs to be unique per cluster
+name: kemel-patroni 
 
 log:
   format: "%(asctime)s %(levelname)s: %(message)s"
-  # ERROR INFO DEBUG
+  
   level: DEBUG
   max_queue_size: 1000
   traceback_level: DEBUG
@@ -12,13 +16,15 @@ log:
 
 restapi:
   listen: 0.0.0.0:8008
-  connect_address: 10.10.0.12:8008 # Needs to be unique per cluster
+  connect_address: 10.10.37.10:2379 
 
 etcd3:
   hosts:
-    - 10.10.0.14:2379
-    - 10.10.0.15:2379
-    - 10.10.0.16:2379
+    - 10.10.33.2 
+    - 10.10.34.2 
+    - 10.10.35.2 
+    - 10.10.36.2 
+    - 10.10.37.2 
 
 bootstrap:
   dcs:
@@ -32,39 +38,43 @@ bootstrap:
       max_connections: 100
       max_worker_processes: 8
       max_locks_per_transaction: 64
+      password_encryption: 'scram-sha-256'
   initdb:
     - encoding: UTF8
     - data-checksums
   users:
     admin:
-      password: admin
+      password: "PFna4qy4v0tnVrgU1FvCmVPJ4HNLwAiLe6JpbbLKm3XSPfnGCZADk4UuzECEXdJq"
       options:
         - createrole
         - createdb
 
 postgresql:
   listen: 0.0.0.0:5432
-  connect_address: 10.10.0.12:5432 # Needs to be unique per cluster
+  connect_address: 10.10.37.10:5433 
   data_dir: /var/lib/postgresql/data
   bin_dir: /usr/local/bin
   pgpass: /tmp/pgpass
   pg_hba:
-    - host replication quinly_replicator 127.0.0.1/32 md5
-    - host replication quinly_replicator  10.10.0.11/32 md5
-    - host replication quinly_replicator  10.10.0.12/32 md5
-    - host replication quinly_replicator  10.10.0.13/32 md5
-    # poi replicator
-    - host replication quinly_admin  10.10.0.11/32 trust
-    - host replication quinly_admin  10.10.0.12/32 trust
-    - host replication quinly_admin  10.10.0.13/32 trust
-    - host all all 0.0.0.0/0 md5
+    - host replication "luxforge_replicator"  10.10.33.10 
+    - host replication "luxforge_replicator"  10.10.34.10 
+    - host replication "luxforge_replicator"  10.10.35.10 
+    - host replication "luxforge_replicator"  10.10.36.10 
+    - host replication "luxforge_replicator"  10.10.37.10 
+    
+    - host all "luxforge_su" 10.10.33.10 
+    - host all "luxforge_su" 10.10.34.10 
+    - host all "luxforge_su" 10.10.35.10 
+    - host all "luxforge_su" 10.10.36.10 
+    - host all "luxforge_su" 10.10.37.10 
+
   authentication:
     replication:
-      username: quinly_replicator
-      password: cudR2XgLSCMWNCYYbuLdxVh3kcrcYYH3
+      username: "luxforge_replicator"
+      password: "WNS8xFvgB0b5E9m5cbCxiBSQgJt3CJMw6eQPoeQG8vglVWcSkJabEcrp548DfnR2"
     superuser:
-      username: quinly_admin
-      password: gjoZSLyU4ZRz5LAya9E7YqKSTqZMgipX
+      username: "luxforge_su"
+      password: "hKYgLGleOQEuGUVyUQ0uepbejwailJg2iTP7X8LTGM7t1J5hY6yZ6tngO14VoPvK"
   tags:
     nofailover: false
     noloadbalance: false
