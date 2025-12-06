@@ -1,7 +1,7 @@
 # Specify the networks used by this service
 networks:
-  services:
-    name: services
+  nexus:
+    name: nexus
     external: true
 
 services:
@@ -9,8 +9,8 @@ services:
     container_name: patroni
     hostname: patroni
     build:
-      dockerfile: ./config.dockerfile
-      context: ./config
+      dockerfile: ./patroni.dockerfile
+      context: ./build
       target: postgres-patroni
       tags: 
       - "database-patroni"
@@ -19,16 +19,25 @@ services:
       options:
         max-size: "1m"
         max-file: "5"
-    env_file:
-      - ./env.d/charlemagne.env
-      - ./env.d/main.env
-
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ./vols/patroni/data:/var/lib/postgresql/data
       - ./config/patroni.yml:/venv/etc/patroni.yml
+      - ./vols/patroni/certs:/etc/certs:ro
     networks:
-      services:
-        ipv4_address: ${NODE_IP}
-
-volumes:
-  postgres_data:
+      nexus:
+        ipv4_address: ${PATRONI_IP}
+    
+  patroni-haproxy:
+    container_name: patroni-haproxy
+    hostname: patroni-haproxy
+    image: haproxy:latest
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: "1m"
+        max-file: "5"
+    volumes:
+      - ./config/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    networks:
+      nexus:
+        ipv4_address: ${PATRONI_HAPROXY_IP}

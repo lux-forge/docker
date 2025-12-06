@@ -1,0 +1,89 @@
+scope: ${PATRONI_SCOPE}
+namespace: /patroni/
+ # Needs to be unique per cluster
+name: ${NODE_NAME}-patroni
+
+log:
+  format: "%(asctime)s %(levelname)s: %(message)s"
+  # ERROR INFO DEBUG
+  level: DEBUG
+  max_queue_size: 1000
+  traceback_level: DEBUG
+  type: plain
+
+restapi:
+  listen: 0.0.0.0:${PATRONI_REST_PORT}
+  # Needs to be unique per cluster
+  connect_address: ${PATRONI_IP}:${PATRONI_CONNECT_PORT}
+
+etcd3:
+  hosts:
+    - ${ETCD_IP1}:${ETCD_CLIENT_PORT}
+    - ${ETCD_IP2}:${ETCD_CLIENT_PORT}
+    - ${ETCD_IP3}:${ETCD_CLIENT_PORT}
+    - ${ETCD_IP4}:${ETCD_CLIENT_PORT}
+    - ${ETCD_IP5}:${ETCD_CLIENT_PORT}
+  protocol: https
+  cacert: /etc/certs/root.crt
+  cert: /etc/certs/${NODE_NAME}/${NODE_NAME}.crt
+  key: /etc/certs/${NODE_NAME}/${NODE_NAME}.key
+
+bootstrap:
+  dcs:
+    ttl: 30
+    loop_wait: 10
+    retry_timeout: 10
+    maximum_lag_on_failover: 1048576
+  postgresql:
+    use_pg_rewind: true
+    parameters:
+      max_connections: 100
+      max_worker_processes: 8
+      max_locks_per_transaction: 64
+      password_encryption: 'scram-sha-256'
+  initdb:
+    - encoding: UTF8
+    - data-checksums
+  users:
+    admin:
+      password: ${PATRONI_ADMIN_PASSWORD}
+      options:
+        - createrole
+        - createdb
+
+postgresql:
+  listen: 0.0.0.0:${POSTGRES_LISTEN_PORT}
+  connect_address: ${PATRONI_IP}:${POSTGRES_CONNECT_PORT} # Needs to be unique per cluster
+  data_dir: /var/lib/postgresql/data
+  bin_dir: /usr/local/bin
+  pgpass: /tmp/pgpass
+  pg_hba:
+    - host replication ${PATRONI_REPLICATOR_NAME}  ${PATRONI_IP1}/32 scram-sha-256
+    - host replication ${PATRONI_REPLICATOR_NAME}  ${PATRONI_IP2}/32 scram-sha-256
+    - host replication ${PATRONI_REPLICATOR_NAME}  ${PATRONI_IP3}/32 scram-sha-256
+    - host replication ${PATRONI_REPLICATOR_NAME}  ${PATRONI_IP4}/32 scram-sha-256
+    - host replication ${PATRONI_REPLICATOR_NAME}  ${PATRONI_IP5}/32 scram-sha-256
+    # Allow superuser (if needed for Patroni management)
+    - host all ${PATRONI_SU_NAME} ${PATRONI_IP1}/32 scram-sha-256
+    - host all ${PATRONI_SU_NAME} ${PATRONI_IP2}/32 scram-sha-256
+    - host all ${PATRONI_SU_NAME} ${PATRONI_IP3}/32 scram-sha-256
+    - host all ${PATRONI_SU_NAME} ${PATRONI_IP4}/32 scram-sha-256
+    - host all ${PATRONI_SU_NAME} ${PATRONI_IP5}/32 scram-sha-256
+
+  authentication:
+    replication:
+      username: ${PATRONI_REPLICATOR_NAME}
+      password: ${PATRONI_REPLICATOR_PASSWORD}
+    superuser:
+      username: ${PATRONI_SU_NAME}
+      password: ${PATRONI_SU_PASSWORD}
+  tags:
+    nofailover: false
+    noloadbalance: false
+    clonefrom: false
+    nosync: false
+
+watchdog:
+  mode: "off"
+  device: /dev/watchdog
+  safety_margin: 5

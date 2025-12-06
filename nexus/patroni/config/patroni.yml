@@ -1,10 +1,11 @@
 # Patroni configuration file generated from template /docker/nexus/patroni/config/patroni-template.yml
-# Date: Thu  4 Dec 23:23:53 GMT 2025
+# Date: Sat  6 Dec 13:10:42 GMT 2025
 
 
 scope: luxforge_crafted_nexus
 namespace: /patroni/
-name: kemel-patroni 
+ 
+name: kemel-patroni
 
 log:
   format: "%(asctime)s %(levelname)s: %(message)s"
@@ -16,15 +17,20 @@ log:
 
 restapi:
   listen: 0.0.0.0:8008
-  connect_address: 10.10.37.10:2379 
+  
+  connect_address: 10.10.37.10:2379
 
 etcd3:
   hosts:
-    - 10.10.33.2 
-    - 10.10.34.2 
-    - 10.10.35.2 
-    - 10.10.36.2 
-    - 10.10.37.2 
+    - 10.10.33.2:2379
+    - 10.10.34.2:2379
+    - 10.10.35.2:2379
+    - 10.10.36.2:2379
+    - 10.10.37.2:2379
+  protocol: https
+  cacert: /etc/certs/root.crt
+  cert: /etc/certs/kemel/kemel.crt
+  key: /etc/certs/kemel/kemel.key
 
 bootstrap:
   dcs:
